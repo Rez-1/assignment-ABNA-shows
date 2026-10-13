@@ -1,21 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { Page, ShowSummary } from '../../../shared/types.ts'
 import PageLinks from '@/shared/components/PageLinks.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
+import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
+import { useAsyncResource } from '@/shared/composables/useAsyncResource'
 import { formatCount } from '@/shared/utils/format'
 import { fetchGenreShows } from './api'
 
 const props = defineProps<{ genre: string; page: number }>()
 
-const result = ref<Page<ShowSummary> | null>(null)
-
-watch(
-  () => [props.genre, props.page] as const,
-  async ([genre, page]) => {
-    result.value = await fetchGenreShows(genre, page)
-  },
-  { immediate: true },
+const { data: result, status } = useAsyncResource(
+  () => ({ genre: props.genre, page: props.page }),
+  ({ genre, page }, signal) => fetchGenreShows(genre, page, signal),
 )
 </script>
 
@@ -25,7 +20,10 @@ watch(
       <h1 class="page-title">{{ genre }}</h1>
       <p v-if="result" class="muted">{{ formatCount(result.total, 'show') }}, best rated first</p>
     </header>
-    <template v-if="result">
+
+    <ShowGridSkeleton v-if="status === 'loading'" :label="`Loading ${genre} shows`" />
+
+    <template v-else-if="result">
       <ShowGrid :shows="result.items" />
       <PageLinks :page="result.page" :page-count="result.pageCount" />
     </template>

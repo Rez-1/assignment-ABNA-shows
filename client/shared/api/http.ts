@@ -13,6 +13,8 @@ export class ApiError extends Error {
 
 export interface RequestOptions {
   params?: Record<string, string | number | undefined>
+  /** Lets the caller abandon the request, for example when the user has moved on. */
+  signal?: AbortSignal
 }
 
 function buildUrl(path: string, params: RequestOptions['params'] = {}): string {
@@ -36,10 +38,10 @@ async function readMessage(response: Response): Promise<string> {
 }
 
 /** GETs JSON from our own API. A failed request throws an ApiError whose message is fit to show. */
-export async function getJson<T>(path: string, { params }: RequestOptions = {}): Promise<T> {
+export async function getJson<T>(path: string, { params, signal }: RequestOptions = {}): Promise<T> {
   let response: Response
   try {
-    response = await fetch(buildUrl(path, params), { headers: { accept: 'application/json' } })
+    response = await fetch(buildUrl(path, params), { signal, headers: { accept: 'application/json' } })
   } catch {
     throw new ApiError('Could not reach the server. Check your connection and try again.', 0)
   }

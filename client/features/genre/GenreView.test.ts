@@ -26,6 +26,27 @@ describe('genre page', () => {
     expect(names(wrapper)).toEqual(['Firefly', 'The Expanse'])
   })
 
+  it('shows placeholders while a page loads, and abandons the request if you leave', async () => {
+    let respond!: (page: unknown) => void
+    const fetch = fakeApi({ '/api/genres/Drama/shows?page=1': () => new Promise((resolve) => (respond = resolve)) })
+
+    const { wrapper, router } = await renderApp('/genres/Drama')
+
+    expect(wrapper.get('h1').text()).toBe('Drama')
+    expect(wrapper.get('[role="status"]').text()).toBe('Loading Drama shows')
+    expect(wrapper.findAll('[data-test="skeleton-card"]').length).toBeGreaterThan(0)
+
+    respond(makePage([makeShow({ name: 'Lost' })]))
+    await flushPromises()
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(names(wrapper)).toEqual(['Lost'])
+
+    const signal = fetch.mock.calls[0]![1]!.signal!
+    expect(signal.aborted).toBe(false)
+    await router.push('/')
+    expect(signal.aborted).toBe(true)
+  })
+
   it('pages through the genre, keeping the page in the URL', async () => {
     fakeApi({
       '/api/genres/Drama/shows?page=2': makePage([makeShow({ name: 'On page two' })], { page: 2, total: 50, pageCount: 3 }),
