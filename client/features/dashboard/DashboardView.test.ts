@@ -78,17 +78,26 @@ describe('dashboard', () => {
 
   it('offers a quick link to every genre row', async () => {
     fakeApi({
-      '/api/genres?limit=20': [makeGenreRow('Drama', [makeShow()]), makeGenreRow('Science-Fiction', [makeShow()])],
+      '/api/genres?limit=20': [
+        makeGenreRow('Drama', [makeShow()]),
+        makeGenreRow('Science-Fiction', [makeShow()]),
+        makeGenreRow('Kids & Family', [makeShow()]),
+      ],
     })
 
     const { wrapper } = await renderApp('/')
     const links = wrapper.get('nav[aria-label="Jump to a genre"]').findAll('a')
 
-    expect(texts(links)).toEqual(['Drama', 'Science-Fiction'])
-    expect(links.map((link) => link.attributes('href'))).toEqual(['/#genre-drama', '/#genre-science-fiction'])
+    expect(texts(links)).toEqual(['Drama', 'Science-Fiction', 'Kids & Family'])
+    expect(links.map((link) => link.attributes('href'))).toEqual([
+      '/#genre-drama',
+      '/#genre-science-fiction',
+      '/#genre-kids-family',
+    ])
     expect(wrapper.findAll('[data-test="genre-row"]').map((row) => row.attributes('id'))).toEqual([
       'genre-drama',
       'genre-science-fiction',
+      'genre-kids-family',
     ])
   })
 

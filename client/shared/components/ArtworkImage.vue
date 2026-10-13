@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import AppIcon from './AppIcon.vue'
 
 /**
  * An image in a box of fixed proportions, so the layout never jumps while it
  * loads. Falls back to a placeholder when there is no image or it fails.
  */
-const props = withDefaults(
+withDefaults(
   defineProps<{
     src: string | null
     /** Empty by default: artwork usually sits next to a visible title. */
@@ -17,10 +17,6 @@ const props = withDefaults(
 )
 
 const failed = ref(false)
-watch(
-  () => props.src,
-  () => (failed.value = false),
-)
 </script>
 
 <template>
