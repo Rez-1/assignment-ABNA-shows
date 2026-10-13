@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { Page, ShowSummary } from '../../../shared/types.ts'
+import PageLinks from '@/shared/components/PageLinks.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
 import { formatCount } from '@/shared/utils/format'
 import { fetchGenreShows } from './api'
 
-const props = defineProps<{ genre: string }>()
+const props = defineProps<{ genre: string; page: number }>()
 
-const page = ref<Page<ShowSummary> | null>(null)
+const result = ref<Page<ShowSummary> | null>(null)
 
-onMounted(async () => {
-  page.value = await fetchGenreShows(props.genre, 1)
-})
+watch(
+  () => [props.genre, props.page] as const,
+  async ([genre, page]) => {
+    result.value = await fetchGenreShows(genre, page)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div class="page genre">
     <header class="genre__header">
       <h1 class="page-title">{{ genre }}</h1>
-      <p v-if="page" class="muted">{{ formatCount(page.total, 'show') }}, best rated first</p>
+      <p v-if="result" class="muted">{{ formatCount(result.total, 'show') }}, best rated first</p>
     </header>
-    <ShowGrid v-if="page" :shows="page.items" />
+    <template v-if="result">
+      <ShowGrid :shows="result.items" />
+      <PageLinks :page="result.page" :page-count="result.pageCount" />
+    </template>
   </div>
 </template>
 

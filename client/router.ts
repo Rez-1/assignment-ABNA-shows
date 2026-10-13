@@ -1,5 +1,13 @@
-import { createRouter, type RouterHistory } from 'vue-router'
+import { createRouter, type LocationQueryValue, type RouterHistory } from 'vue-router'
 import DashboardView from '@/features/dashboard/DashboardView.vue'
+
+type QueryValue = LocationQueryValue | LocationQueryValue[] | undefined
+
+/** Reads `?page=` from the URL; anything that is not a positive whole number means page 1. */
+function toPageNumber(value: QueryValue): number {
+  const page = Number(value)
+  return Number.isInteger(page) && page > 0 ? page : 1
+}
 
 /** The history is passed in so tests can run the real router in memory. */
 export function createAppRouter(history: RouterHistory) {
@@ -13,7 +21,12 @@ export function createAppRouter(history: RouterHistory) {
     },
     routes: [
       { path: '/', name: 'dashboard', component: DashboardView },
-      { path: '/genres/:genre', name: 'genre', component: () => import('@/features/genre/GenreView.vue'), props: true },
+      {
+        path: '/genres/:genre',
+        name: 'genre',
+        component: () => import('@/features/genre/GenreView.vue'),
+        props: (route) => ({ genre: String(route.params.genre), page: toPageNumber(route.query.page) }),
+      },
       { path: '/shows/:id', name: 'show', component: () => import('@/features/show/ShowDetailView.vue') },
     ],
   })
