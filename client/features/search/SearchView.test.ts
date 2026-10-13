@@ -60,6 +60,26 @@ describe('searching by name', () => {
     expect(names(wrapper)).toEqual(['Lost'])
   })
 
+  it('never shows the previous search’s count beside a new search that is still loading', async () => {
+    let respond!: (page: unknown) => void
+    fakeApi({
+      '/api/genres?limit=20': [],
+      '/api/shows/search?q=lost&page=1': makePage([makeShow({ name: 'Lost' })], { total: 276, pageCount: 12 }),
+      '/api/shows/search?q=fargo&page=1': () => new Promise((resolve) => (respond = resolve)),
+    })
+    const { wrapper, router } = await renderApp('/search?q=lost')
+    expect(wrapper.get('h1').text()).toBe('276 results for “lost”')
+
+    await router.push('/search?q=fargo')
+    await settle()
+    expect(wrapper.get('h1').text()).toBe('Searching for “fargo”')
+    expect(names(wrapper)).toEqual([])
+
+    respond(makePage([makeShow({ name: 'Fargo' })]))
+    await settle()
+    expect(wrapper.get('h1').text()).toBe('1 result for “fargo”')
+  })
+
   it('narrows the results to a genre, starting again from the first page', async () => {
     fakeApi({
       '/api/genres?limit=20': [makeGenreRow('Drama', []), makeGenreRow('Fantasy', [])],

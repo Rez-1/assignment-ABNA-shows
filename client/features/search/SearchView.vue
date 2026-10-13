@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useGenresStore } from '@/features/dashboard/genresStore'
 import GenreSelect from '@/shared/components/GenreSelect.vue'
 import PageLinks from '@/shared/components/PageLinks.vue'
+import ResourceState from '@/shared/components/ResourceState.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
 import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
@@ -18,16 +19,12 @@ const router = useRouter()
 const genres = useGenresStore()
 onMounted(genres.ensureLoaded)
 
-const {
-  data: result,
-  error,
-  status,
-  reload,
-} = useAsyncResource(
-  () => ({ query: props.query, genre: props.genre, page: props.page }),
-  // Nothing to look for yet: skip the request rather than ask the server for an empty search.
-  (request, signal) => (request.query ? searchShows(request, signal) : Promise.resolve(null)),
+const resource = useAsyncResource(
+  // Nothing to look for yet: a null source skips the request rather than ask the server for an empty search.
+  () => (props.query ? { query: props.query, genre: props.genre, page: props.page } : null),
+  searchShows,
 )
+const result = resource.data
 
 // The URL holds the search; picking a genre rewrites it and starts again from page one.
 const selectedGenre = computed({
@@ -54,39 +51,32 @@ const heading = computed(() => {
 
     <!-- Always present, so screen readers announce each change as results come in while typing. -->
     <p v-if="query" role="status" class="visually-hidden" data-test="search-status">
-      {{ status === 'loading' ? 'Searching' : heading }}
+      {{ resource.status.value === 'loading' ? 'Searching' : heading }}
     </p>
 
-    <StatusMessage
-      v-if="!query"
-      title="What are you looking for?"
-      message="Type a show’s name in the search box above."
-    />
+    <ResourceState :resource="resource" error-title="The search could not be completed">
+      <template #idle>
+        <StatusMessage title="What are you looking for?" message="Type a show’s name in the search box above." />
+      </template>
 
-    <ShowGridSkeleton v-else-if="status === 'loading'" />
+      <template #loading>
+        <ShowGridSkeleton />
+      </template>
 
-    <StatusMessage
-      v-else-if="error"
-      variant="error"
-      title="The search could not be completed"
-      :message="error.message"
-      retryable
-      @retry="reload"
-    />
-
-    <template v-else-if="result">
-      <StatusMessage
-        v-if="result.total === 0"
-        :title="`No shows match ${scope}`"
-        message="Check the spelling or try a shorter part of the name."
-      >
-        <RouterLink v-if="genre" :to="{ name: 'search', query: { q: query } }" class="text-link" data-test="all-genres">
-          Search all genres
-        </RouterLink>
-      </StatusMessage>
-      <ShowGrid v-else :shows="result.items" />
-      <PageLinks :page="result.page" :page-count="result.pageCount" />
-    </template>
+      <template #default="{ data: found }">
+        <StatusMessage
+          v-if="found.total === 0"
+          :title="`No shows match ${scope}`"
+          message="Check the spelling or try a shorter part of the name."
+        >
+          <RouterLink v-if="genre" :to="{ name: 'search', query: { q: query } }" class="text-link" data-test="all-genres">
+            Search all genres
+          </RouterLink>
+        </StatusMessage>
+        <ShowGrid v-else :shows="found.items" />
+        <PageLinks :page="found.page" :page-count="found.pageCount" />
+      </template>
+    </ResourceState>
   </div>
 </template>
 

@@ -2,6 +2,7 @@
 import type { Season } from '../../../shared/types.ts'
 import ArtworkImage from '@/shared/components/ArtworkImage.vue'
 import HorizontalScroller from '@/shared/components/HorizontalScroller.vue'
+import ResourceState from '@/shared/components/ResourceState.vue'
 import SkeletonCard from '@/shared/components/SkeletonCard.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
@@ -11,45 +12,38 @@ import { fetchSeasonEpisodes } from './api'
 /** The episodes of one season, loaded when that season is shown. */
 const props = defineProps<{ season: Season }>()
 
-const { data: episodes, error, status, reload } = useAsyncResource(() => props.season.id, fetchSeasonEpisodes)
+const resource = useAsyncResource(() => props.season.id, fetchSeasonEpisodes)
 </script>
 
 <template>
   <section class="episodes" aria-labelledby="episodes-heading">
     <h2 id="episodes-heading" class="section-title">Season {{ season.number }} episodes</h2>
 
-    <template v-if="status === 'loading'">
-      <p role="status" class="visually-hidden">Loading episodes</p>
-      <div class="episodes__skeleton">
-        <SkeletonCard v-for="card in 4" :key="card" shape="still" class="episodes__skeleton-card" />
-      </div>
-    </template>
-
-    <StatusMessage
-      v-else-if="error"
-      variant="error"
-      title="Episodes could not be loaded"
-      :message="error.message"
-      retryable
-      compact
-      @retry="reload"
-    />
-
-    <StatusMessage v-else-if="episodes?.length === 0" title="No episodes are listed for this season" compact />
-
-    <HorizontalScroller v-else-if="episodes" :label="`Season ${season.number} episodes`" class="episodes__scroller">
-      <li v-for="episode in episodes" :key="episode.id" class="episode" data-test="episode">
-        <div class="episode__still">
-          <ArtworkImage :src="episode.image" shape="still" />
-          <span v-if="episode.number !== null" class="episode__number" data-test="episode-number">
-            <span class="visually-hidden">Episode {{ episode.number }}:</span>
-            <span aria-hidden="true">E{{ episode.number }}</span>
-          </span>
+    <ResourceState :resource="resource" error-title="Episodes could not be loaded" loading-label="Loading episodes" compact>
+      <template #loading>
+        <div class="episodes__skeleton">
+          <SkeletonCard v-for="card in 4" :key="card" shape="still" class="episodes__skeleton-card" />
         </div>
-        <p class="episode__name" data-test="episode-name">{{ episode.name }}</p>
-        <p v-if="formatDate(episode.airdate)" class="episode__date muted">{{ formatDate(episode.airdate) }}</p>
-      </li>
-    </HorizontalScroller>
+      </template>
+
+      <template #default="{ data: episodes }">
+        <StatusMessage v-if="episodes.length === 0" title="No episodes are listed for this season" compact />
+
+        <HorizontalScroller v-else :label="`Season ${season.number} episodes`" class="episodes__scroller">
+          <li v-for="episode in episodes" :key="episode.id" class="episode" data-test="episode">
+            <div class="episode__still">
+              <ArtworkImage :src="episode.image" shape="still" />
+              <span v-if="episode.number !== null" class="episode__number" data-test="episode-number">
+                <span class="visually-hidden">Episode {{ episode.number }}:</span>
+                <span aria-hidden="true">E{{ episode.number }}</span>
+              </span>
+            </div>
+            <p class="episode__name" data-test="episode-name">{{ episode.name }}</p>
+            <p v-if="formatDate(episode.airdate)" class="episode__date muted">{{ formatDate(episode.airdate) }}</p>
+          </li>
+        </HorizontalScroller>
+      </template>
+    </ResourceState>
   </section>
 </template>
 

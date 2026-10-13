@@ -175,6 +175,16 @@ describe('show detail page', () => {
       expect(episodeNames(wrapper)).toEqual(['Pilot'])
     })
 
+    it('offers to retry when the server does not know the season', async () => {
+      showApi(makeShowDetails({ seasons }))
+
+      const { wrapper } = await renderApp('/shows/169')
+
+      const alert = wrapper.get('section[aria-labelledby="episodes-heading"] [role="alert"]')
+      expect(alert.text()).toContain('Episodes could not be loaded')
+      expect(alert.find('button').exists()).toBe(true)
+    })
+
     it('says when a season has no episodes listed', async () => {
       showApi(makeShowDetails({ seasons }), { '/api/seasons/753/episodes': [] })
 
@@ -246,6 +256,22 @@ describe('show detail page', () => {
     await settle()
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
     expect(wrapper.get('h1').text()).toBe('Breaking Bad')
+  })
+
+  it('stops naming the previous show in the tab title while the next one loads', async () => {
+    let respond!: (details: unknown) => void
+    showApi(makeShowDetails(), { '/api/shows/170': () => new Promise((resolve) => (respond = resolve)) })
+    const { wrapper, router } = await renderApp('/shows/169')
+    expect(document.title).toBe('Breaking Bad · Showtime')
+
+    await router.push('/shows/170')
+    await settle()
+    expect(wrapper.get('[role="status"]').text()).toBe('Loading show')
+    expect(document.title).toBe('Showtime')
+
+    respond(makeShowDetails({ id: 170, name: 'Better Call Saul' }))
+    await settle()
+    expect(document.title).toBe('Better Call Saul · Showtime')
   })
 
   it('says when a show does not exist and points back to the dashboard', async () => {

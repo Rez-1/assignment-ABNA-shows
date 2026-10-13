@@ -26,6 +26,25 @@ describe('genre page', () => {
     expect(names(wrapper)).toEqual(['Firefly', 'The Expanse'])
   })
 
+  it('never shows the previous genre’s total under a genre that is still loading', async () => {
+    let respond!: (page: unknown) => void
+    fakeApi({
+      '/api/genres/Drama/shows?page=1': makePage([makeShow({ name: 'Lost' })], { total: 3210, pageCount: 134 }),
+      '/api/genres/Comedy/shows?page=1': () => new Promise((resolve) => (respond = resolve)),
+    })
+    const { wrapper, router } = await renderApp('/genres/Drama')
+    expect(wrapper.text()).toContain('3,210 shows')
+
+    await router.push('/genres/Comedy')
+    await flushPromises()
+    expect(wrapper.get('h1').text()).toBe('Comedy')
+    expect(wrapper.text()).not.toContain('3,210 shows')
+
+    respond(makePage([makeShow({ name: 'Scrubs' })], { total: 12 }))
+    await flushPromises()
+    expect(wrapper.text()).toContain('12 shows')
+  })
+
   it('shows placeholders while a page loads, and abandons the request if you leave', async () => {
     let respond!: (page: unknown) => void
     const fetch = fakeApi({ '/api/genres/Drama/shows?page=1': () => new Promise((resolve) => (respond = resolve)) })

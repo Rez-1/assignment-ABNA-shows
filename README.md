@@ -78,8 +78,8 @@ API: `GET /api/genres`, `/api/genres/:genre/shows`, `/api/shows/search`, `/api/s
 - **Vue 3 with `<script setup>` and TypeScript**, as the brief prefers Vue. The project is set up by hand (no `create-vue` template) and uses no UI or utility library: the runtime dependencies are `vue`, `vue-router` and `pinia`.
 - **Organised by feature.** Everything a screen needs sits together, and `shared/` holds what more than one feature uses. Features may depend on `shared/`, not the other way round (the header, which hosts the search box, lives in `app/`).
 - **The URL is the state for search and paging.** Query, genre filter and page number live in the address, so results can be shared and the back button behaves.
-- **Pinia only where state outlives a screen:** the dashboard's genre rows (also the source of the genre filter) and shows already visited, so going back is instant. Everything else is fetched per screen with one composable, `useAsyncResource`, which handles loading and error state and aborts requests that have been superseded, so a slow early response can never overwrite a later one.
-- **Reusable pieces:** `HorizontalScroller` (genre rows, seasons, episodes, cast), `ShowRow`, `ShowCard`, `ShowGrid`, `ArtworkImage`, `PageLinks`, `StatusMessage` and the skeleton placeholders.
+- **Pinia only where state outlives a screen:** the dashboard's genre rows (also the source of the genre filter) and shows already visited, so going back is instant. Everything else is fetched per screen with one composable, `useAsyncResource`, which tells apart nothing to ask for, loading, missing (a 404), failed and ready, drops the previous answer as soon as the question changes, and aborts requests that have been superseded, so a slow early response can never overwrite a later one. `ResourceState` renders those states, so a screen only supplies its wording and its content.
+- **Reusable pieces:** `HorizontalScroller` (genre rows, seasons, episodes, cast), `ShowRow`, `ShowCard`, `ShowGrid`, `ArtworkImage`, `PageLinks`, `ResourceState`, `StatusMessage` and the skeleton placeholders.
 
 ### Design
 
@@ -128,7 +128,7 @@ Tests sit at a small number of agreed boundaries and describe behaviour rather t
 | Snapshot file | Written and read back from a temporary directory |
 | Screens | The whole Vue app is mounted with the real router and stores; only `fetch` is faked |
 | Interactive components | `HorizontalScroller`, and search and paging through the screens |
-| `useAsyncResource` | Loading, errors, reload and "the newest request wins" |
+| `useAsyncResource` | Idle, loading, missing, errors, reload, no stale data and "the newest request wins" |
 | Design tokens | WCAG AA contrast of the colour pairs, including text over artwork |
 | Accessibility | axe on every screen, plus focus, announcements and text alternatives |
 
