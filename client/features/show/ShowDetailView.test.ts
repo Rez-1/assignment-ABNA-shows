@@ -31,4 +31,47 @@ describe('show detail page', () => {
     ])
     expect(wrapper.get('[data-test="show-airing"]').text()).toBe('AMC · Sundays at 22:00')
   })
+
+  it('links to the official site in a new tab, without handing over the referrer', async () => {
+    showApi()
+
+    const { wrapper } = await renderApp('/shows/169')
+
+    expect(wrapper.get('[data-test="official-site"]').attributes()).toMatchObject({
+      href: 'http://www.amc.com/shows/breaking-bad',
+      target: '_blank',
+      rel: 'noopener noreferrer',
+    })
+  })
+
+  it('copes with a show we know little about', async () => {
+    showApi(
+      makeShowDetails({
+        id: 5,
+        name: 'Obscure',
+        genres: [],
+        rating: null,
+        summary: [],
+        status: 'Running',
+        language: null,
+        runtime: null,
+        premiered: '2019-03-01',
+        ended: null,
+        network: null,
+        schedule: null,
+        officialSite: null,
+      }),
+    )
+
+    const { wrapper } = await renderApp('/shows/5')
+
+    expect(wrapper.findAll('[data-test="show-facts"] li').map((fact) => fact.text())).toEqual([
+      'Not rated',
+      '2019 – present',
+      'Running',
+    ])
+    expect(wrapper.find('[data-test="show-summary"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="show-airing"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="official-site"]').exists()).toBe(false)
+  })
 })
