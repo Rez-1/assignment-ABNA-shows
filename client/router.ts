@@ -5,6 +5,12 @@ import DashboardView from '@/features/dashboard/DashboardView.vue'
 export function createAppRouter(history: RouterHistory) {
   return createRouter({
     history,
+    scrollBehavior(to, _from, savedPosition) {
+      // Back and forward restore where you were; quick links scroll to their genre row.
+      if (savedPosition) return savedPosition
+      if (to.hash) return { el: to.hash, behavior: 'smooth' }
+      return { top: 0 }
+    },
     routes: [
       { path: '/', name: 'dashboard', component: DashboardView },
       { path: '/genres/:genre', name: 'genre', component: () => import('@/features/genre/GenreView.vue') },

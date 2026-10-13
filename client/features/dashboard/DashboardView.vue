@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import type { GenreRow as GenreRowData } from '../../../shared/types.ts'
 import { fetchGenreRows } from './api'
+import GenreQuickLinks from './GenreQuickLinks.vue'
 import GenreRow from './GenreRow.vue'
 
 const rows = ref<GenreRowData[]>([])
@@ -14,6 +15,7 @@ onMounted(async () => {
 <template>
   <div class="page dashboard">
     <h1 class="visually-hidden">TV shows by genre</h1>
+    <GenreQuickLinks v-if="rows.length" :genres="rows.map((row) => row.genre)" />
     <GenreRow v-for="row in rows" :key="row.genre" :row="row" />
   </div>
 </template>

@@ -65,6 +65,22 @@ describe('dashboard', () => {
     expect(western!.text()).not.toContain('1 shows')
   })
 
+  it('offers a quick link to every genre row', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [makeGenreRow('Drama', [makeShow()]), makeGenreRow('Science-Fiction', [makeShow()])],
+    })
+
+    const { wrapper } = await renderApp('/')
+    const links = wrapper.get('nav[aria-label="Jump to a genre"]').findAll('a')
+
+    expect(texts(links)).toEqual(['Drama', 'Science-Fiction'])
+    expect(links.map((link) => link.attributes('href'))).toEqual(['/#genre-drama', '/#genre-science-fiction'])
+    expect(wrapper.findAll('[data-test="genre-row"]').map((row) => row.attributes('id'))).toEqual([
+      'genre-drama',
+      'genre-science-fiction',
+    ])
+  })
+
   it('shows each poster lazily, with a placeholder when it is missing or fails to load', async () => {
     const poster = 'https://static.tvmaze.com/uploads/images/medium_portrait/1/1.jpg'
     fakeApi({

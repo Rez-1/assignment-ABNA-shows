@@ -2,13 +2,13 @@
 import type { GenreRow } from '../../../shared/types.ts'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import ShowCard from '@/shared/components/ShowCard.vue'
-import { formatCount } from '@/shared/utils/format'
+import { formatCount, genreAnchor } from '@/shared/utils/format'
 
 defineProps<{ row: GenreRow }>()
 </script>
 
 <template>
-  <section class="genre-row" data-test="genre-row">
+  <section :id="genreAnchor(row.genre)" class="genre-row" data-test="genre-row">
     <header class="genre-row__header">
       <h2 class="section-title">{{ row.genre }}</h2>
       <span class="genre-row__count muted">{{ formatCount(row.total, 'show') }}</span>
