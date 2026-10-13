@@ -4,7 +4,7 @@ import SkeletonCard from '@/shared/components/SkeletonCard.vue'
 import { usePageName } from '@/shared/composables/usePageName'
 import GenreQuickLinks from './GenreQuickLinks.vue'
 import GenreRow from './GenreRow.vue'
-import { useGenreRows } from './genresStore'
+import { useGenreRows } from './genreRows'
 
 const genres = useGenreRows()
 

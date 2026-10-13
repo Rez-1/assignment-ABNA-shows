@@ -59,7 +59,7 @@ server/             Express API (TypeScript, run directly by Node)
   data/seed.json.gz The bundled catalogue
 client/             Vue app
   app/              Header, not-found page
-  features/         dashboard · genre · search · show (view, components, store, API, tests)
+  features/         dashboard · genre · search · show (view, components, API, tests)
   shared/           Reusable components, composables, API wrapper, formatters
   styles/           Design tokens and base styles
 ```
@@ -77,10 +77,11 @@ API: `GET /api/genres`, `/api/genres/:genre/shows`, `/api/shows/search`, `/api/s
 
 ### Client
 
-- **Vue 3 with `<script setup>` and TypeScript**, as the brief prefers Vue. The project is set up by hand (no `create-vue` template) and uses no UI or utility library: the runtime dependencies are `vue`, `vue-router` and `pinia`.
+- **Vue 3 with `<script setup>` and TypeScript**, as the brief prefers Vue. The project is set up by hand (no `create-vue` template) and uses no UI or utility library: the runtime dependencies are `vue` and `vue-router`.
 - **Organised by feature.** Everything a screen needs sits together, and `shared/` holds what more than one feature uses. Features may depend on `shared/`, not the other way round (the header, which hosts the search box, lives in `app/`).
 - **The URL is the state for search and paging.** Query, genre filter and page number live in the address, so results can be shared and the back button behaves. One module, `shared/utils/locations`, reads and writes those parameters; a search address takes no page number, so changing the text or the genre always starts again from the first page.
-- **Pinia only where state outlives a screen:** the dashboard's genre rows (also the source of the genre filter) and shows already visited, so going back is instant. Everything else is fetched per screen with one composable, `useAsyncResource`, which tells apart nothing to ask for, loading, missing (a 404), failed and ready, drops the previous answer as soon as the question changes, and aborts requests that have been superseded, so a slow early response can never overwrite a later one. `ResourceState` renders those states, so a screen only supplies its wording and its content. The two stores keep their answers with the same small helper, `remember` (ask once, share a request that is on its way, forget failures), and screens read them through `useAsyncResource` like anything else.
+- **One way to load data.** Every screen fetches what it needs with one composable, `useAsyncResource`, which tells apart nothing to ask for, loading, missing (a 404), failed and ready, drops the previous answer as soon as the question changes, and aborts requests that have been superseded, so a slow early response can never overwrite a later one. `ResourceState` renders those states, so a screen only supplies its wording and its content.
+- **No state library.** Only two things outlive a screen: the dashboard's genre rows (also the source of the genre filter) and shows already visited, so going back is instant. A small helper, `remember`, keeps them (ask once, share a request that is on its way, forget failures) in a memory the app provides to its components, and screens read them through `useAsyncResource` like anything else. That is all the shared state there is, so a store library would add a dependency without adding anything the app uses.
 - **Reusable pieces:** `HorizontalScroller` (genre rows, seasons, episodes, cast), `ShowRow`, `ShowCard`, `ShowGrid`, `ArtworkImage`, `PageLinks`, `ResourceState`, `StatusMessage` and the skeleton placeholders.
 
 ### Design
@@ -128,7 +129,7 @@ Tests sit at a small number of agreed boundaries and describe behaviour rather t
 | Catalogue | Ranking, genre rows, paging and search through its public interface |
 | TVMaze client | Only `fetch` is faked; mapping and URL/HTML safety are tested through it |
 | Snapshot file | Written and read back from a temporary directory |
-| Screens | The whole Vue app is mounted with the real router and stores; only `fetch` is faked |
+| Screens | The whole Vue app is mounted with the real router; only `fetch` is faked |
 | Interactive components | `HorizontalScroller`, and search and paging through the screens |
 | `useAsyncResource` | Idle, loading, missing, errors, reload, no stale data and "the newest request wins" |
 | Design tokens | WCAG AA contrast of the colour pairs, including text over artwork |

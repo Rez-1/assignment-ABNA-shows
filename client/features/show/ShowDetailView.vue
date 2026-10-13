@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BrowseGenresLink from '@/shared/components/BrowseGenresLink.vue'
+import { useRemembered } from '@/shared/api/remember'
 import ResourceState from '@/shared/components/ResourceState.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
@@ -8,14 +9,14 @@ import CastRow from './CastRow.vue'
 import RelatedShows from './RelatedShows.vue'
 import ShowHero from './ShowHero.vue'
 import ShowSeasons from './ShowSeasons.vue'
-import { useShowsStore } from './showsStore'
+import { fetchShow } from './api'
 
 /** `id` is null when the URL does not hold a valid show id. */
 const props = defineProps<{ id: number | null }>()
 
-const shows = useShowsStore()
-
-const resource = useAsyncResource(() => props.id, shows.load, { nullSource: 'missing' })
+// Shows already visited are remembered, so going back to one (for example with the browser's Back
+// button) shows it at once. The request is not tied to this screen: leave early and the answer is still kept.
+const resource = useAsyncResource(() => props.id, useRemembered(fetchShow), { nullSource: 'missing' })
 
 usePageName(() => resource.data.value?.name ?? (resource.status.value === 'missing' ? 'Show not found' : null))
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useGenreRows } from '@/features/dashboard/genresStore'
+import { useGenreRows } from '@/features/dashboard/genreRows'
 import GenreSelect from '@/shared/components/GenreSelect.vue'
 import PageLinks from '@/shared/components/PageLinks.vue'
 import ResourceState from '@/shared/components/ResourceState.vue'

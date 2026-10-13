@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
 import { vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 import App from '@/App.vue'
 import { createAppRouter } from '@/router'
+import { createMemory } from '@/shared/api/remember'
 import { jsonResponse } from '../../shared/testing.ts'
 
 export { jsonResponse }
@@ -13,7 +13,7 @@ export type FakeRoutes = Record<string, unknown | (() => unknown)>
 
 /**
  * Replaces `fetch` with a fake of our own API. This is the only thing screen
- * tests fake: router, stores and components are all real. Unknown URLs answer
+ * tests fake: the router, components and what the app remembers are all real. Unknown URLs answer
  * 404, like the real server.
  */
 export function fakeApi(routes: FakeRoutes) {
@@ -42,7 +42,7 @@ export async function renderApp(path = '/') {
   await router.push(path)
   await router.isReady()
 
-  const wrapper = mount(App, { global: { plugins: [createPinia(), router] }, attachTo: document.body })
+  const wrapper = mount(App, { global: { plugins: [createMemory(), router] }, attachTo: document.body })
   await settle()
   return { wrapper, router }
 }
