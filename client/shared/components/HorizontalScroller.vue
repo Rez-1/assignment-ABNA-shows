@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, onUpdated, ref, useTemplateRef } from 'vue'
 import AppIcon from './AppIcon.vue'
 
 /**
@@ -10,6 +10,28 @@ import AppIcon from './AppIcon.vue'
 defineProps<{ label: string }>()
 
 const track = useTemplateRef('track')
+const canGoBack = ref(false)
+const canGoForward = ref(false)
+
+function measure() {
+  const element = track.value
+  if (!element) return
+  // One pixel of slack absorbs sub-pixel rounding at either end.
+  canGoBack.value = element.scrollLeft > 1
+  canGoForward.value = element.scrollLeft + element.clientWidth < element.scrollWidth - 1
+}
+
+// Re-measure when the box resizes and when the items in the slot change.
+let resizeObserver: ResizeObserver | undefined
+onMounted(() => {
+  measure()
+  if (typeof ResizeObserver !== 'undefined' && track.value) {
+    resizeObserver = new ResizeObserver(measure)
+    resizeObserver.observe(track.value)
+  }
+})
+onUpdated(measure)
+onBeforeUnmount(() => resizeObserver?.disconnect())
 
 /** Scrolls most of a page, leaving the last visible card on screen as a point of reference. */
 function page(direction: 1 | -1) {
@@ -20,13 +42,13 @@ function page(direction: 1 | -1) {
 
 <template>
   <div class="scroller">
-    <button type="button" class="scroller__button scroller__button--back" :aria-label="`Scroll ${label} back`" @click="page(-1)">
+    <button type="button" class="scroller__button scroller__button--back" :aria-label="`Scroll ${label} back`" :disabled="!canGoBack" @click="page(-1)">
       <AppIcon name="chevron-left" />
     </button>
-    <ul ref="track" class="scroller__track" :aria-label="label">
+    <ul ref="track" class="scroller__track" :aria-label="label" @scroll.passive="measure">
       <slot />
     </ul>
-    <button type="button" class="scroller__button scroller__button--forward" :aria-label="`Scroll ${label} forward`" @click="page(1)">
+    <button type="button" class="scroller__button scroller__button--forward" :aria-label="`Scroll ${label} forward`" :disabled="!canGoForward" @click="page(1)">
       <AppIcon name="chevron-right" />
     </button>
   </div>
