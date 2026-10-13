@@ -9,7 +9,7 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "dev": "node --watch server/index.ts",
+    "dev": "node --watch-path=server --watch-path=shared server/index.ts",
     "build": "vue-tsc --noEmit && vite build",
     "start": "node server/index.ts --production",
     "seed": "node server/scripts/seed.ts",
