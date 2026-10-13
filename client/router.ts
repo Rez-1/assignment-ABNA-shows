@@ -7,6 +7,7 @@ export function createAppRouter(history: RouterHistory) {
     history,
     routes: [
       { path: '/', name: 'dashboard', component: DashboardView },
+      { path: '/genres/:genre', name: 'genre', component: () => import('@/features/genre/GenreView.vue') },
       { path: '/shows/:id', name: 'show', component: () => import('@/features/show/ShowDetailView.vue') },
     ],
   })

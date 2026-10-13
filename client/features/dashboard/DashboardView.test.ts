@@ -47,6 +47,24 @@ describe('dashboard', () => {
     expect(unrated!.get('[data-test="rating"]').text()).toBe('Not rated')
   })
 
+  it('tells how many shows a genre has and links to all of them', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [
+        makeGenreRow('Science-Fiction', [makeShow()], 26512),
+        makeGenreRow('Western', [makeShow()], 1),
+      ],
+    })
+
+    const { wrapper } = await renderApp('/')
+    const [scienceFiction, western] = wrapper.findAll('[data-test="genre-row"]')
+
+    expect(scienceFiction!.text()).toContain('26,512 shows')
+    expect(scienceFiction!.get('[data-test="view-all"]').attributes('href')).toBe('/genres/Science-Fiction')
+    expect(scienceFiction!.get('[data-test="view-all"]').attributes('aria-label')).toBe('View all Science-Fiction shows')
+    expect(western!.text()).toContain('1 show')
+    expect(western!.text()).not.toContain('1 shows')
+  })
+
   it('shows each poster lazily, with a placeholder when it is missing or fails to load', async () => {
     const poster = 'https://static.tvmaze.com/uploads/images/medium_portrait/1/1.jpg'
     fakeApi({
