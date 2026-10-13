@@ -11,15 +11,18 @@ Built with **Vue 3, TypeScript and Vite**, backed by a small **Node/Express** se
 | Node.js | **24.14.0** used (see `.nvmrc`); 22.18 or newer works |
 | pnpm | **12.11.2**, pinned in `package.json` |
 
-pnpm is used instead of npm. You do not need to install it: Corepack ships with Node and fetches the pinned version.
+pnpm is used instead of npm. If you do not have it yet, install it once:
 
 ```bash
-corepack enable          # once; makes the `pnpm` command available
+npm install --global pnpm@12
+```
+
+Then:
+
+```bash
 pnpm install
 pnpm dev                 # http://localhost:3000
 ```
-
-If you would rather not enable Corepack, prefix the commands instead: `corepack pnpm install`, `corepack pnpm dev`.
 
 | Command | What it does |
 | --- | --- |
