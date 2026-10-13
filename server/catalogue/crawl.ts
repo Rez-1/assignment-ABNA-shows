@@ -1,5 +1,5 @@
 import type { ShowSummary } from '../../shared/types.ts'
-import type { TvMazeClient } from '../tvmaze/client.ts'
+import { sleep, type TvMazeClient } from '../tvmaze/client.ts'
 
 export interface CrawlOptions {
   client: Pick<TvMazeClient, 'fetchIndexPage'>
@@ -19,7 +19,7 @@ export async function crawlShowIndex(options: CrawlOptions): Promise<ShowSummary
   const {
     client,
     delayMs = 500,
-    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    sleep: pause = sleep,
     onPage,
     maxPages = 5_000,
   } = options
@@ -30,7 +30,7 @@ export async function crawlShowIndex(options: CrawlOptions): Promise<ShowSummary
     if (batch === null) return shows
     shows.push(...batch)
     onPage?.(page, shows.length)
-    await sleep(delayMs)
+    await pause(delayMs)
   }
   throw new Error(`Show index did not end within ${maxPages} pages`)
 }

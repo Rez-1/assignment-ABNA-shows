@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import BrowseGenresLink from '@/shared/components/BrowseGenresLink.vue'
 import PageLinks from '@/shared/components/PageLinks.vue'
 import ResourceState from '@/shared/components/ResourceState.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
 import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
-import { usePageTitle } from '@/shared/composables/usePageTitle'
+import { usePageName } from '@/shared/composables/usePageName'
 import { formatCount } from '@/shared/utils/format'
 import { pageLocation } from '@/shared/utils/locations'
 import { fetchGenreShows } from './api'
@@ -17,7 +18,7 @@ const resource = useAsyncResource(
   ({ genre, page }, signal) => fetchGenreShows(genre, page, signal),
 )
 
-usePageTitle(() => props.genre)
+usePageName(() => props.genre)
 </script>
 
 <template>
@@ -34,7 +35,7 @@ usePageTitle(() => props.genre)
 
       <template #missing>
         <StatusMessage :title="`There is no genre called “${genre}”`">
-          <RouterLink :to="{ name: 'dashboard' }" class="text-link" data-test="back-to-genres">Browse all genres</RouterLink>
+          <BrowseGenresLink />
         </StatusMessage>
       </template>
 

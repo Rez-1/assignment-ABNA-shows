@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, type ComputedRef } from 'vue'
+import { GENRE_ROW_SIZE } from '../../../shared/limits.ts'
 import type { GenreRow } from '../../../shared/types.ts'
 import { remember } from '@/shared/api/remember'
 import { type AsyncResource, useAsyncResource } from '@/shared/composables/useAsyncResource'
@@ -12,7 +13,8 @@ import { fetchGenreRows } from './api'
  */
 export const useGenresStore = defineStore('genres', () => {
   // One key: there is a single set of rows.
-  const load = remember<true, GenreRow[]>(fetchGenreRows)
+  const rowsBySize = new Map<number, GenreRow[]>()
+  const load = remember(fetchGenreRows, rowsBySize)
 
   return { load }
 })
@@ -20,7 +22,7 @@ export const useGenresStore = defineStore('genres', () => {
 /** The genre rows for a screen: asked for once, then shared by every screen that uses them. */
 export function useGenreRows(): AsyncResource<GenreRow[]> & { genreNames: ComputedRef<string[]> } {
   const { load } = useGenresStore()
-  const resource = useAsyncResource(() => true as const, load)
+  const resource = useAsyncResource(() => GENRE_ROW_SIZE, load)
   const genreNames = computed(() => (resource.data.value ?? []).map((row) => row.genre))
 
   return { ...resource, genreNames }

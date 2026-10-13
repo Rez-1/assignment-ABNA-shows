@@ -41,9 +41,36 @@ export function useAsyncResource<Source, Data>(
   let controller: AbortController | undefined
   let latest: Source
 
-  async function run(value: Source) {
+  /** Abandons the request in flight, if any, and returns the signal for the next one. */
+  function supersede(): AbortSignal {
     controller?.abort()
-    const current = (controller = new AbortController())
+    controller = new AbortController()
+    return controller.signal
+  }
+
+  function succeed(result: Data) {
+    data.value = result
+    status.value = 'success'
+  }
+
+  function fail(cause: unknown) {
+    error.value = cause instanceof Error ? cause : new Error(String(cause))
+    status.value = cause instanceof ApiError && cause.status === 404 ? 'missing' : 'error'
+  }
+
+  /** Waits for an answer and reports it, unless a newer request has taken over meanwhile. */
+  async function wait(answer: Promise<Data>, signal: AbortSignal) {
+    status.value = 'loading'
+    try {
+      const result = await answer
+      if (!signal.aborted) succeed(result)
+    } catch (cause) {
+      if (!signal.aborted) fail(cause)
+    }
+  }
+
+  function run(value: Source) {
+    const signal = supersede()
     latest = value
     data.value = null
     error.value = null
@@ -54,23 +81,16 @@ export function useAsyncResource<Source, Data>(
     }
 
     try {
-      let result = fetcher(value, current.signal)
-      if (result instanceof Promise) {
-        status.value = 'loading'
-        result = await result
-        if (current.signal.aborted) return
-      }
-      data.value = result
-      status.value = 'success'
+      const answer = fetcher(value, signal)
+      if (answer instanceof Promise) void wait(answer, signal)
+      else succeed(answer)
     } catch (cause) {
-      if (current.signal.aborted) return
-      error.value = cause instanceof Error ? cause : new Error(String(cause))
-      status.value = cause instanceof ApiError && cause.status === 404 ? 'missing' : 'error'
+      fail(cause)
     }
   }
 
   watch(source, run, { immediate: true })
   onScopeDispose(() => controller?.abort())
 
-  return { data, error, status, reload: () => void run(latest) }
+  return { data, error, status, reload: () => run(latest) }
 }

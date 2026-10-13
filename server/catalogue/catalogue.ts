@@ -1,5 +1,5 @@
 import type { GenreRow, Page, ShowSummary } from '../../shared/types.ts'
-import { compareByRating, MATCH_RANKS, matchRank, normalise } from './ranking.ts'
+import { compareBestFirst, MATCH_RANKS, matchRank, normalise } from './ranking.ts'
 
 export interface Paging {
   page: number
@@ -37,28 +37,44 @@ function paginate<T>(items: T[], { page, pageSize }: Paging): Page<T> {
   }
 }
 
+/** Groups shows under each of their genres, keeping the order they come in. Keyed by normalised name. */
+function groupByGenre(shows: readonly ShowSummary[]): Map<string, Genre> {
+  // A Map, not a plain object: genre names come from request URLs.
+  const genres = new Map<string, Genre>()
+  for (const show of shows) {
+    for (const name of show.genres) {
+      const key = normalise(name)
+      let genre = genres.get(key)
+      if (!genre) genres.set(key, (genre = { name, shows: [] }))
+      genre.shows.push(show)
+    }
+  }
+  return genres
+}
+
+const bySizeThenName = (a: Genre, b: Genre) => b.shows.length - a.shows.length || a.name.localeCompare(b.name)
+
 /**
  * Builds the in-memory index once, up front: all sorting happens here so that
  * every request afterwards is a lookup and a slice.
  */
 export function createCatalogue(shows: readonly ShowSummary[]): Catalogue {
-  const ranked = [...shows].sort(compareByRating)
+  const ranked = [...shows].sort(compareBestFirst)
   const searchNames = ranked.map((show) => normalise(show.name))
+  // `ranked` is already sorted, so each genre's list is too.
+  const genres = groupByGenre(ranked)
+  const genresBySize = [...genres.values()].sort(bySizeThenName)
 
-  // A Map, not a plain object: genre names come from request URLs.
-  const genres = new Map<string, Genre>()
-  for (const show of ranked) {
-    for (const name of show.genres) {
-      const key = normalise(name)
-      let genre = genres.get(key)
-      if (!genre) genres.set(key, (genre = { name, shows: [] }))
-      // `ranked` is already sorted, so each genre list is too.
-      genre.shows.push(show)
-    }
+  /** The shows whose name matches, best match first and, within one quality of match, best rated first. */
+  function matching(needle: string, wanted: (show: ShowSummary) => boolean): ShowSummary[] {
+    // One bucket per match quality; scanning in ranked order keeps each bucket sorted by rating.
+    const buckets = Array.from({ length: MATCH_RANKS }, (): ShowSummary[] => [])
+    ranked.forEach((show, index) => {
+      const rank = matchRank(searchNames[index] ?? '', needle)
+      if (rank !== null && wanted(show)) buckets[rank]?.push(show)
+    })
+    return buckets.flat()
   }
-  const genresBySize = [...genres.values()].sort(
-    (a, b) => b.shows.length - a.shows.length || a.name.localeCompare(b.name),
-  )
 
   return {
     size: ranked.length,
@@ -74,18 +90,11 @@ export function createCatalogue(shows: readonly ShowSummary[]): Catalogue {
 
     search({ query, genre, ...paging }) {
       const needle = normalise(query)
-      const genreKey = genre ? normalise(genre) : null
-      if (needle === '' || (genreKey !== null && !genres.has(genreKey))) return paginate([], paging)
+      if (needle === '') return paginate([], paging)
+      if (!genre) return paginate(matching(needle, () => true), paging)
 
-      // One bucket per match quality; scanning in ranked order keeps each bucket sorted by rating.
-      const buckets: ShowSummary[][] = Array.from({ length: MATCH_RANKS }, () => [])
-      for (const [index, show] of ranked.entries()) {
-        const rank = matchRank(searchNames[index]!, needle)
-        if (rank === null) continue
-        if (genreKey !== null && !show.genres.some((name) => normalise(name) === genreKey)) continue
-        buckets[rank]!.push(show)
-      }
-      return paginate(buckets.flat(), paging)
+      const inGenre = new Set(genres.get(normalise(genre))?.shows)
+      return paginate(matching(needle, (show) => inGenre.has(show)), paging)
     },
   }
 }

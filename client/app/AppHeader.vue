@@ -11,7 +11,7 @@ const onSearchPage = computed(() => route.name === 'search')
 const term = computed(() => (onSearchPage.value ? readSearch(route).query : ''))
 
 /** The URL is the single source of truth for a search; this only updates it. */
-function search(text: string) {
+function goToSearch(text: string) {
   if (onSearchPage.value) {
     // Refining a search replaces the history entry, so Back leaves the search page in one step.
     router.replace(searchLocation({ query: text, genre: readSearch(route).genre }))
@@ -27,7 +27,7 @@ function search(text: string) {
       <RouterLink :to="{ name: 'dashboard' }" class="header__logo" aria-label="Showtime home">
         Show<span class="header__logo-accent">time</span>
       </RouterLink>
-      <SearchBox :term="term" class="header__search" @search="search" />
+      <SearchBox :term="term" class="header__search" @search="goToSearch" />
     </div>
   </header>
 </template>

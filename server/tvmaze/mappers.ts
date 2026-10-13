@@ -12,11 +12,11 @@ const IMAGE_HOST = 'static.tvmaze.com'
 const isRecord = (value: unknown): value is Raw => typeof value === 'object' && value !== null && !Array.isArray(value)
 const asRecord = (value: unknown): Raw => (isRecord(value) ? value : {})
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
-const asString = (value: unknown): string | null => (typeof value === 'string' && value.trim() !== '' ? value : null)
+const asNonBlankString = (value: unknown): string | null => (typeof value === 'string' && value.trim() !== '' ? value : null)
 const asNumber = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null)
 
 function parseUrl(value: unknown): URL | null {
-  const text = asString(value)
+  const text = asNonBlankString(value)
   if (!text) return null
   try {
     return new URL(text)
@@ -55,7 +55,7 @@ function decodeEntities(text: string): string {
  * produce readable prose.
  */
 export function htmlToParagraphs(html: unknown): string[] {
-  const text = asString(html)
+  const text = asNonBlankString(html)
   if (!text) return []
   return text
     .split(/<\/p>|<br\s*\/?>/i)
@@ -64,19 +64,19 @@ export function htmlToParagraphs(html: unknown): string[] {
 }
 
 function toYear(date: unknown): number | null {
-  const year = Number(asString(date)?.slice(0, 4))
+  const year = Number(asNonBlankString(date)?.slice(0, 4))
   return Number.isInteger(year) && year > 1800 ? year : null
 }
 
 function toGenres(value: unknown): string[] {
-  return asArray(value).filter((genre): genre is string => typeof genre === 'string' && genre.trim() !== '')
+  return asArray(value).filter((genre): genre is string => asNonBlankString(genre) !== null)
 }
 
 /** Returns null for payloads without a usable id and name, so one bad record cannot break a page. */
 export function toShowSummary(raw: unknown): ShowSummary | null {
   const show = asRecord(raw)
   const id = asNumber(show.id)
-  const name = asString(show.name)
+  const name = asNonBlankString(show.name)
   if (id === null || !Number.isInteger(id) || id <= 0 || name === null) return null
 
   return {
@@ -94,7 +94,7 @@ function toSchedule(raw: unknown): string | null {
   const schedule = asRecord(raw)
   const days = asArray(schedule.days).filter((day): day is string => typeof day === 'string')
   if (days.length === 0) return null
-  const time = asString(schedule.time)
+  const time = asNonBlankString(schedule.time)
   const when = days.map((day) => `${day}s`).join(', ')
   return time ? `${when} at ${time}` : when
 }
@@ -103,13 +103,13 @@ function toCastMember(raw: unknown): CastMember | null {
   const entry = asRecord(raw)
   const person = asRecord(entry.person)
   const character = asRecord(entry.character)
-  const name = asString(person.name)
+  const name = asNonBlankString(person.name)
   if (name === null) return null
 
   return {
     id: `${asNumber(person.id) ?? name}-${asNumber(character.id) ?? 0}`,
     name,
-    character: asString(character.name) ?? '',
+    character: asNonBlankString(character.name) ?? '',
     image: toImageUrl(asRecord(person.image).medium) ?? toImageUrl(asRecord(character.image).medium),
   }
 }
@@ -124,7 +124,7 @@ function toSeason(raw: unknown): Season | null {
     id,
     number,
     episodeCount: asNumber(season.episodeOrder),
-    premiereDate: asString(season.premiereDate),
+    premiereDate: asNonBlankString(season.premiereDate),
     image: toImageUrl(asRecord(season.image).medium),
   }
 }
@@ -149,12 +149,12 @@ export function toShowDetails(raw: unknown): ShowDetails | null {
   return {
     ...summary,
     summary: htmlToParagraphs(show.summary),
-    status: asString(show.status),
-    language: asString(show.language),
+    status: asNonBlankString(show.status),
+    language: asNonBlankString(show.language),
     runtime: asNumber(show.runtime) ?? asNumber(show.averageRuntime),
-    premiered: asString(show.premiered),
-    ended: asString(show.ended),
-    network: asString(channel.name),
+    premiered: asNonBlankString(show.premiered),
+    ended: asNonBlankString(show.ended),
+    network: asNonBlankString(channel.name),
     schedule: toSchedule(show.schedule),
     officialSite: toExternalUrl(show.officialSite),
     poster: toImageUrl(asRecord(show.image).original),
@@ -174,8 +174,8 @@ export function toEpisode(raw: unknown): Episode | null {
     id,
     season,
     number: asNumber(episode.number),
-    name: asString(episode.name) ?? 'Untitled episode',
-    airdate: asString(episode.airdate),
+    name: asNonBlankString(episode.name) ?? 'Untitled episode',
+    airdate: asNonBlankString(episode.airdate),
     runtime: asNumber(episode.runtime),
     rating: asNumber(asRecord(episode.rating).average),
     image: toImageUrl(asRecord(episode.image).medium),

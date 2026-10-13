@@ -5,7 +5,7 @@ import type { ShowSummary } from '../../shared/types.ts'
  * weight (the API exposes no vote count, so this keeps ties sensible), then
  * name for a stable order. Unrated shows always come last.
  */
-export function compareByRating(a: ShowSummary, b: ShowSummary): number {
+export function compareBestFirst(a: ShowSummary, b: ShowSummary): number {
   if (a.rating !== b.rating) {
     if (a.rating === null) return 1
     if (b.rating === null) return -1

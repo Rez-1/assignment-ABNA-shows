@@ -4,13 +4,12 @@ import { vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 import App from '@/App.vue'
 import { createAppRouter } from '@/router'
+import { jsonResponse } from '../../shared/testing.ts'
+
+export { jsonResponse }
 
 /** What the fake server answers per URL: a JSON body, or a function producing one (or a Response). */
 export type FakeRoutes = Record<string, unknown | (() => unknown)>
-
-export function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
-}
 
 /**
  * Replaces `fetch` with a fake of our own API. This is the only thing screen

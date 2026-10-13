@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
+import { MAX_TEXT_LENGTH } from '../../../shared/limits.ts'
 import AppIcon from '@/shared/components/AppIcon.vue'
 
 /**
@@ -44,7 +45,7 @@ onBeforeUnmount(() => clearTimeout(timer))
       type="search"
       placeholder="Search shows"
       autocomplete="off"
-      maxlength="100"
+      :maxlength="MAX_TEXT_LENGTH"
       @input="searchSoon"
     />
   </form>

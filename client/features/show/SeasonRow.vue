@@ -2,15 +2,15 @@
 import type { Season } from '../../../shared/types.ts'
 import ArtworkImage from '@/shared/components/ArtworkImage.vue'
 import HorizontalScroller from '@/shared/components/HorizontalScroller.vue'
-import { formatCount } from '@/shared/utils/format'
+import { formatCount, yearOf } from '@/shared/utils/format'
 
 /** A row of season cards; exactly one is selected. */
 defineProps<{ seasons: readonly Season[] }>()
 
-const selectedId = defineModel<number>({ required: true })
+const selectedId = defineModel<number | null>({ required: true })
 
 function describe(season: Season): string {
-  const year = season.premiereDate?.slice(0, 4)
+  const year = yearOf(season.premiereDate)
   const episodes = season.episodeCount === null ? null : formatCount(season.episodeCount, 'episode')
   return [year, episodes].filter(Boolean).join(' · ')
 }

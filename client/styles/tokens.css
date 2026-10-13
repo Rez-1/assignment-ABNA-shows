@@ -69,6 +69,8 @@
 
   --duration-fast: 150ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  /* The slow fade of a placeholder while content loads; the keyframes are in base.css. */
+  --pulse: pulse 1.4s ease-in-out infinite;
 }
 
 @media (max-width: 40rem) {

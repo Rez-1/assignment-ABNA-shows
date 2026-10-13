@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { GENRE_ROW_SIZE } from '../../../shared/limits.ts'
 import { fetchGenreShows } from '@/features/genre/api'
 import ShowRow from '@/shared/components/ShowRow.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
@@ -11,14 +12,12 @@ import { useAsyncResource } from '@/shared/composables/useAsyncResource'
  */
 const props = defineProps<{ showId: number; genre: string }>()
 
-const ROW_SIZE = 20
-
 const { data: page } = useAsyncResource(
   () => props.genre,
   (genre, signal) => fetchGenreShows(genre, 1, signal),
 )
 
-const shows = computed(() => (page.value?.items ?? []).filter((show) => show.id !== props.showId).slice(0, ROW_SIZE))
+const shows = computed(() => (page.value?.items ?? []).filter((show) => show.id !== props.showId).slice(0, GENRE_ROW_SIZE))
 </script>
 
 <template>

@@ -1,4 +1,4 @@
-import type { ErrorRequestHandler, RequestHandler } from 'express'
+import type { ErrorRequestHandler, Request, RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import helmet from 'helmet'
 import type { ApiErrorBody } from '../../shared/types.ts'
@@ -49,8 +49,11 @@ export function proxyRateLimit({ windowMs, limit }: RateLimitOptions): RequestHa
   })
 }
 
+/** Whether a request only reads: GET, or HEAD (a GET without the body). */
+export const isRead = (req: Request): boolean => req.method === 'GET' || req.method === 'HEAD'
+
 export const readOnly: RequestHandler = (req, res, next) => {
-  if (req.method === 'GET' || req.method === 'HEAD') return next()
+  if (isRead(req)) return next()
   res.set('Allow', 'GET, HEAD').status(405).json({ message: 'Method not allowed' } satisfies ApiErrorBody)
 }
 

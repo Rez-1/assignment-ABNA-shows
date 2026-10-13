@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import express, { type Router } from 'express'
+import { isRead } from './security.ts'
 
 /**
  * Serves the built client from `clientDir`: its files, and the app shell for
@@ -17,7 +18,7 @@ export function servePages(clientDir: string): Router {
   // Whether a request is for a page is decided by what it asks for, not by how its
   // path looks: "/shows/1.5" is a page address, and the client shows its own "not found".
   pages.use((req, res, next) => {
-    const wantsPage = (req.method === 'GET' || req.method === 'HEAD') && req.headers.accept?.includes('text/html')
+    const wantsPage = isRead(req) && req.headers.accept?.includes('text/html')
     if (!wantsPage) return next()
     res.sendFile('index.html', { root: clientDir })
   })

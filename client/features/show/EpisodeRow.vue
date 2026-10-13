@@ -49,13 +49,15 @@ const resource = useAsyncResource(() => props.season.id, fetchSeasonEpisodes)
 
 <style scoped>
 .episodes {
+  --episode-width: clamp(12rem, 60vw, 16rem);
+
   display: grid;
   gap: var(--space-3);
   min-width: 0;
 }
 
 .episodes__scroller {
-  --scroller-item-width: clamp(12rem, 60vw, 16rem);
+  --scroller-item-width: var(--episode-width);
 }
 
 .episodes__skeleton {
@@ -66,7 +68,7 @@ const resource = useAsyncResource(() => props.season.id, fetchSeasonEpisodes)
 }
 
 .episodes__skeleton-card {
-  flex: 0 0 clamp(12rem, 60vw, 16rem);
+  flex: 0 0 var(--episode-width);
 }
 
 .episode {

@@ -16,29 +16,37 @@ const canGoForward = ref(false)
 // plain content (cast, episodes) get a tab stop of their own so arrow keys can scroll them.
 const needsTabStop = ref(false)
 
-function measure() {
-  const element = track.value
-  if (!element) return
+function updateScrollEnds(element: HTMLElement) {
   // One pixel of slack absorbs sub-pixel rounding at either end.
   canGoBack.value = element.scrollLeft > 1
   canGoForward.value = element.scrollLeft + element.clientWidth < element.scrollWidth - 1
+}
+
+function updateTabStop(element: HTMLElement) {
   needsTabStop.value = element.querySelector('a[href], button, input, select, textarea, [tabindex]') === null
 }
 
-// Re-measure when the box resizes and when the items in the slot change.
+/** Brings everything derived from the track up to date. */
+function refresh() {
+  if (!track.value) return
+  updateScrollEnds(track.value)
+  updateTabStop(track.value)
+}
+
+// Refresh when the box resizes and when the items in the slot change.
 let resizeObserver: ResizeObserver | undefined
 onMounted(() => {
-  measure()
+  refresh()
   if (typeof ResizeObserver !== 'undefined' && track.value) {
-    resizeObserver = new ResizeObserver(measure)
+    resizeObserver = new ResizeObserver(refresh)
     resizeObserver.observe(track.value)
   }
 })
-onUpdated(measure)
+onUpdated(refresh)
 onBeforeUnmount(() => resizeObserver?.disconnect())
 
 /** Scrolls most of a page, leaving the last visible card on screen as a point of reference. */
-function page(direction: 1 | -1) {
+function scrollByPage(direction: 1 | -1) {
   const element = track.value
   if (element) element.scrollBy({ left: direction * element.clientWidth * 0.85 })
 }
@@ -46,7 +54,7 @@ function page(direction: 1 | -1) {
 
 <template>
   <div class="scroller">
-    <button type="button" class="scroller__button scroller__button--back" :aria-label="`Scroll ${label} back`" :disabled="!canGoBack" @click="page(-1)">
+    <button type="button" class="scroller__button scroller__button--back" :aria-label="`Scroll ${label} back`" :disabled="!canGoBack" @click="scrollByPage(-1)">
       <AppIcon name="chevron-left" />
     </button>
     <ul
@@ -55,11 +63,11 @@ function page(direction: 1 | -1) {
       role="list"
       :aria-label="label"
       :tabindex="needsTabStop ? 0 : undefined"
-      @scroll.passive="measure"
+      @scroll.passive="updateScrollEnds(track!)"
     >
       <slot />
     </ul>
-    <button type="button" class="scroller__button scroller__button--forward" :aria-label="`Scroll ${label} forward`" :disabled="!canGoForward" @click="page(1)">
+    <button type="button" class="scroller__button scroller__button--forward" :aria-label="`Scroll ${label} forward`" :disabled="!canGoForward" @click="scrollByPage(1)">
       <AppIcon name="chevron-right" />
     </button>
   </div>

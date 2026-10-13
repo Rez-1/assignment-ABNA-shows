@@ -30,43 +30,51 @@ export interface TvMazeClientOptions {
   retryDelayMs?: number
 }
 
-const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 export function createTvMazeClient(options: TvMazeClientOptions = {}): TvMazeClient {
   const {
     fetch = globalThis.fetch,
-    sleep = defaultSleep,
+    sleep: pause = sleep,
     timeoutMs = 10_000,
     maxRetries = 3,
     retryDelayMs = 2_000,
   } = options
 
+  async function send(path: string): Promise<Response> {
+    try {
+      return await fetch(`${BASE_URL}${path}`, {
+        headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+    } catch {
+      throw new TvMazeError('TVMaze could not be reached')
+    }
+  }
+
+  /** Sends the request again, after a growing pause, for as long as TVMaze says we are going too fast. */
+  async function sendPatiently(path: string): Promise<Response> {
+    for (let attempt = 0; ; attempt++) {
+      const response = await send(path)
+      if (response.status !== 429 || attempt >= maxRetries) return response
+      await pause(retryDelayMs * (attempt + 1))
+    }
+  }
+
+  async function readBody(response: Response): Promise<unknown> {
+    try {
+      return await response.json()
+    } catch {
+      throw new TvMazeError('TVMaze sent an unreadable response', response.status)
+    }
+  }
+
   /** Resolves to the parsed body, or null for a 404. */
   async function request(path: string): Promise<unknown> {
-    for (let attempt = 0; ; attempt++) {
-      let response: Response
-      try {
-        response = await fetch(`${BASE_URL}${path}`, {
-          headers: { accept: 'application/json' },
-          signal: AbortSignal.timeout(timeoutMs),
-        })
-      } catch {
-        throw new TvMazeError('TVMaze could not be reached')
-      }
-
-      if (response.status === 404) return null
-      if (response.status === 429 && attempt < maxRetries) {
-        await sleep(retryDelayMs * (attempt + 1))
-        continue
-      }
-      if (!response.ok) throw new TvMazeError(`TVMaze responded with ${response.status}`, response.status)
-
-      try {
-        return await response.json()
-      } catch {
-        throw new TvMazeError('TVMaze sent an unreadable response', response.status)
-      }
-    }
+    const response = await sendPatiently(path)
+    if (response.status === 404) return null
+    if (!response.ok) throw new TvMazeError(`TVMaze responded with ${response.status}`, response.status)
+    return readBody(response)
   }
 
   function mapList<T>(body: unknown, map: (raw: unknown) => T | null): T[] {

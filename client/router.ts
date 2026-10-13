@@ -1,10 +1,11 @@
 import { createRouter, type RouterHistory } from 'vue-router'
+import { ID_PATTERN } from '../shared/limits.ts'
 import DashboardView from '@/features/dashboard/DashboardView.vue'
 import { readPage, readSearch } from '@/shared/utils/locations'
 
 /** A show id from the URL, or null when it is not a positive whole number. */
 function toShowId(value: string | string[] | undefined): number | null {
-  return typeof value === 'string' && /^[1-9]\d{0,9}$/.test(value) ? Number(value) : null
+  return typeof value === 'string' && ID_PATTERN.test(value) ? Number(value) : null
 }
 
 /** The history is passed in so tests can run the real router in memory. */

@@ -2,7 +2,7 @@
 import { useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/app/AppHeader.vue'
-import { currentPageName } from '@/shared/composables/usePageTitle'
+import { currentPageName } from '@/shared/composables/usePageName'
 
 const main = useTemplateRef('main')
 

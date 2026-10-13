@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { ArtworkShape } from './ArtworkImage.vue'
+
 /** A grey stand-in with the same proportions as a real card, so nothing jumps when content arrives. */
-withDefaults(defineProps<{ shape?: 'poster' | 'still' | 'portrait' }>(), { shape: 'poster' })
+withDefaults(defineProps<{ shape?: ArtworkShape }>(), { shape: 'poster' })
 </script>
 
 <template>
@@ -21,7 +23,7 @@ withDefaults(defineProps<{ shape?: 'poster' | 'still' | 'portrait' }>(), { shape
 .skeleton__line {
   border-radius: var(--radius-card);
   background: var(--color-surface-raised);
-  animation: pulse 1.4s ease-in-out infinite;
+  animation: var(--pulse);
 }
 
 .skeleton__art {
@@ -44,11 +46,5 @@ withDefaults(defineProps<{ shape?: 'poster' | 'still' | 'portrait' }>(), { shape
 
 .skeleton__line--short {
   width: 50%;
-}
-
-@keyframes pulse {
-  50% {
-    opacity: 0.5;
-  }
 }
 </style>

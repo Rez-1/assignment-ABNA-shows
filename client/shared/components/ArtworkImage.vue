@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import AppIcon from './AppIcon.vue'
 
+/** The proportions of a piece of artwork: a show poster, an episode still or a cast portrait. */
+export type ArtworkShape = 'poster' | 'still' | 'portrait'
+
 /**
  * An image in a box of fixed proportions, so the layout never jumps while it
  * loads. Falls back to a placeholder when there is no image or it fails.
@@ -11,7 +14,7 @@ withDefaults(
     src: string | null
     /** Empty by default: artwork usually sits next to a visible title. */
     alt?: string
-    shape?: 'poster' | 'still' | 'portrait'
+    shape?: ArtworkShape
   }>(),
   { alt: '', shape: 'poster' },
 )

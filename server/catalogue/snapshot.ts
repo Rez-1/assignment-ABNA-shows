@@ -19,8 +19,11 @@ function isShowSummary(value: unknown): value is ShowSummary {
   if (typeof value !== 'object' || value === null) return false
   const show = value as Record<string, unknown>
   return (
+    // The same two rules the TVMaze mapper applies: a positive whole id and a name that is not blank.
     Number.isInteger(show.id) &&
+    (show.id as number) > 0 &&
     typeof show.name === 'string' &&
+    show.name.trim() !== '' &&
     Array.isArray(show.genres) &&
     show.genres.every((genre) => typeof genre === 'string') &&
     isNullOr(show.rating, 'number') &&

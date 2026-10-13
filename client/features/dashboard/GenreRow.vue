@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { GenreRow } from '../../../shared/types.ts'
 import ShowRow from '@/shared/components/ShowRow.vue'
-import { formatCount, genreAnchor } from '@/shared/utils/format'
+import { formatCount } from '@/shared/utils/format'
+import { genreAnchor } from '@/shared/utils/locations'
 
 defineProps<{ row: GenreRow }>()
 </script>

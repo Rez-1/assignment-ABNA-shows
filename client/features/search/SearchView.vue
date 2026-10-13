@@ -9,7 +9,7 @@ import ShowGrid from '@/shared/components/ShowGrid.vue'
 import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
-import { usePageTitle } from '@/shared/composables/usePageTitle'
+import { usePageName } from '@/shared/composables/usePageName'
 import { formatCount } from '@/shared/utils/format'
 import { searchLocation } from '@/shared/utils/locations'
 import { searchShows } from './api'
@@ -24,7 +24,6 @@ const resource = useAsyncResource(
   () => (props.query ? { query: props.query, genre: props.genre, page: props.page } : null),
   searchShows,
 )
-const result = resource.data
 
 // The URL holds the search; picking a genre rewrites it.
 const selectedGenre = computed({
@@ -32,13 +31,14 @@ const selectedGenre = computed({
   set: (genre) => router.push(searchLocation({ query: props.query, genre })),
 })
 
-usePageTitle(() => (props.query ? `“${props.query}”` : 'Search'))
+usePageName(() => (props.query ? `“${props.query}”` : 'Search'))
 
 const scope = computed(() => `“${props.query}”${props.genre ? ` in ${props.genre}` : ''}`)
 
 const heading = computed(() => {
   if (!props.query) return 'Search shows'
-  return result.value ? `${formatCount(result.value.total, 'result')} for ${scope.value}` : `Searching for ${scope.value}`
+  const result = resource.data.value
+  return result ? `${formatCount(result.total, 'result')} for ${scope.value}` : `Searching for ${scope.value}`
 })
 </script>
 
@@ -63,9 +63,9 @@ const heading = computed(() => {
         <ShowGridSkeleton />
       </template>
 
-      <template #default="{ data: found }">
+      <template #default="{ data: result }">
         <StatusMessage
-          v-if="found.total === 0"
+          v-if="result.total === 0"
           :title="`No shows match ${scope}`"
           message="Check the spelling or try a shorter part of the name."
         >
@@ -73,8 +73,8 @@ const heading = computed(() => {
             Search all genres
           </RouterLink>
         </StatusMessage>
-        <ShowGrid v-else :shows="found.items" />
-        <PageLinks :page="found.page" :page-count="found.pageCount" />
+        <ShowGrid v-else :shows="result.items" />
+        <PageLinks :page="result.page" :page-count="result.pageCount" />
       </template>
     </ResourceState>
   </div>

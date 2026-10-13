@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { usePageTitle } from '@/shared/composables/usePageTitle'
+import BrowseGenresLink from '@/shared/components/BrowseGenresLink.vue'
+import { usePageName } from '@/shared/composables/usePageName'
 
-usePageTitle(() => 'Page not found')
+usePageName(() => 'Page not found')
 </script>
 
 <template>
   <div class="page not-found">
     <h1 class="page-title">Page not found</h1>
     <p class="muted">There is nothing at this address.</p>
-    <RouterLink :to="{ name: 'dashboard' }" class="text-link">Browse all genres</RouterLink>
+    <BrowseGenresLink />
   </div>
 </template>
 

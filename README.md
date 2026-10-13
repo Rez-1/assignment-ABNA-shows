@@ -50,6 +50,8 @@ The brief asks for shows grouped by genre and sorted by rating, and notes that T
 
 ```
 shared/types.ts     The contract between server and client
+shared/limits.ts    Limits both sides agree on: id format, row size, longest text
+shared/testing.ts   Test fixtures used by both sides
 server/             Express API (TypeScript, run directly by Node)
   catalogue/        In-memory index: ranking, genre rows, search, snapshot file, crawler
   tvmaze/           The only code that talks to TVMaze and reads its payloads

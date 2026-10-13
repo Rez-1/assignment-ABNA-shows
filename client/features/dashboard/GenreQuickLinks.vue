@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { genreAnchor } from '@/shared/utils/format'
+import { genreAnchor } from '@/shared/utils/locations'
 
 defineProps<{ genres: string[] }>()
 </script>

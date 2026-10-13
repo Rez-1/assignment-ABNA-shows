@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import ResourceState from '@/shared/components/ResourceState.vue'
 import SkeletonCard from '@/shared/components/SkeletonCard.vue'
-import { usePageTitle } from '@/shared/composables/usePageTitle'
+import { usePageName } from '@/shared/composables/usePageName'
 import GenreQuickLinks from './GenreQuickLinks.vue'
 import GenreRow from './GenreRow.vue'
 import { useGenreRows } from './genresStore'
 
 const genres = useGenreRows()
 
-usePageTitle(() => null)
+usePageName(() => null)
 </script>
 
 <template>

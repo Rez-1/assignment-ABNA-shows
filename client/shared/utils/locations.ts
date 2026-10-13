@@ -1,8 +1,9 @@
 import type { LocationQuery, RouteLocationRaw } from 'vue-router'
 
 /**
- * How search and paging are written in the URL: `?q=`, `?genre=` and `?page=`.
- * Everything that reads or writes those parameters goes through here.
+ * How the app's state is written in the URL: `?q=`, `?genre=` and `?page=` for
+ * search and paging, and the fragment that points at a genre row. Everything
+ * that reads or writes those goes through here.
  */
 
 /** Anything with the query of the current address, such as the current route. */
@@ -40,4 +41,9 @@ export function searchLocation({ query, genre }: { query: string; genre?: string
 export function pageLocation(route: HasQuery, page: number): RouteLocationRaw {
   // Page 1 is the default, so it is left out of the URL.
   return { query: { ...route.query, page: page > 1 ? page : undefined } }
+}
+
+/** The element id of a genre's row, usable as a URL fragment: "Science-Fiction" becomes "genre-science-fiction". */
+export function genreAnchor(genre: string): string {
+  return `genre-${genre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 }

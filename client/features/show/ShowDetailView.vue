@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import BrowseGenresLink from '@/shared/components/BrowseGenresLink.vue'
 import ResourceState from '@/shared/components/ResourceState.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
-import { usePageTitle } from '@/shared/composables/usePageTitle'
+import { usePageName } from '@/shared/composables/usePageName'
 import CastRow from './CastRow.vue'
 import RelatedShows from './RelatedShows.vue'
 import ShowHero from './ShowHero.vue'
@@ -16,7 +17,7 @@ const shows = useShowsStore()
 
 const resource = useAsyncResource(() => props.id, shows.load, { nullSource: 'missing' })
 
-usePageTitle(() => resource.data.value?.name ?? (resource.status.value === 'missing' ? 'Show not found' : null))
+usePageName(() => resource.data.value?.name ?? (resource.status.value === 'missing' ? 'Show not found' : null))
 </script>
 
 <template>
@@ -38,7 +39,7 @@ usePageTitle(() => resource.data.value?.name ?? (resource.status.value === 'miss
           message="It may have been removed, or the link is incorrect."
           :heading-level="1"
         >
-          <RouterLink :to="{ name: 'dashboard' }" class="text-link" data-test="back-to-genres">Browse all genres</RouterLink>
+          <BrowseGenresLink />
         </StatusMessage>
       </template>
 
@@ -75,7 +76,7 @@ usePageTitle(() => resource.data.value?.name ?? (resource.status.value === 'miss
   height: 1rem;
   border-radius: var(--radius-badge);
   background: var(--color-surface-raised);
-  animation: pulse 1.4s ease-in-out infinite;
+  animation: var(--pulse);
 }
 
 .show__skeleton-line--title {
@@ -85,11 +86,5 @@ usePageTitle(() => resource.data.value?.name ?? (resource.status.value === 'miss
 
 .show__skeleton-line--short {
   width: 40%;
-}
-
-@keyframes pulse {
-  50% {
-    opacity: 0.5;
-  }
 }
 </style>
