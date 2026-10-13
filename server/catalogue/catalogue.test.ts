@@ -34,6 +34,32 @@ describe('genreRows', () => {
   })
 })
 
+describe('ranking within a genre', () => {
+  const ranked = (list: ReturnType<typeof makeShow>[]) => names(createCatalogue(list).genreRows(20)[0]!.shows)
+
+  it('puts unrated shows behind every rated one, even a zero', () => {
+    expect(
+      ranked([makeShow({ name: 'Unrated', rating: null }), makeShow({ name: 'Zero', rating: 0 }), makeShow({ name: 'Five', rating: 5 })]),
+    ).toEqual(['Five', 'Zero', 'Unrated'])
+  })
+
+  it('breaks rating ties by popularity weight, then by name', () => {
+    expect(
+      ranked([
+        makeShow({ name: 'Obscure', rating: 8, weight: 10 }),
+        makeShow({ name: 'Beta', rating: 8, weight: 90 }),
+        makeShow({ name: 'Alpha', rating: 8, weight: 90 }),
+      ]),
+    ).toEqual(['Alpha', 'Beta', 'Obscure'])
+  })
+
+  it('orders unrated shows among themselves by popularity', () => {
+    expect(
+      ranked([makeShow({ name: 'Unknown', rating: null, weight: 1 }), makeShow({ name: 'Known', rating: null, weight: 80 })]),
+    ).toEqual(['Known', 'Unknown'])
+  })
+})
+
 describe('showsByGenre', () => {
   it('pages through a genre', () => {
     const page = catalogue.showsByGenre('Drama', { page: 2, pageSize: 3 })
@@ -64,6 +90,15 @@ describe('search', () => {
     expect(names(results.items)).toEqual(['Lost', 'Lost Girl', 'The Lost Room'])
   })
 
+  it('puts an exact title above better-rated shows that merely start with the query', () => {
+    const results = createCatalogue([
+      makeShow({ name: 'Lost Girl', rating: 9.5 }),
+      makeShow({ name: 'Lost', rating: 5 }),
+    ]).search({ query: 'lost', ...firstPage })
+
+    expect(names(results.items)).toEqual(['Lost', 'Lost Girl'])
+  })
+
   it('falls back to rating order within the same match quality', () => {
     const tied = createCatalogue([
       makeShow({ name: 'Star Low', rating: 5 }),
@@ -73,8 +108,19 @@ describe('search', () => {
     expect(names(tied.search({ query: 'star', ...firstPage }).items)).toEqual(['Star High', 'Star Low'])
   })
 
-  it('ignores case and accents', () => {
-    expect(names(catalogue.search({ query: 'POKEMON', ...firstPage }).items)).toEqual(['Pokémon'])
+  it('ignores case, accents and surrounding space', () => {
+    expect(names(catalogue.search({ query: '  POKEMON ', ...firstPage }).items)).toEqual(['Pokémon'])
+    expect(names(catalogue.search({ query: 'pokémon', ...firstPage }).items)).toEqual(['Pokémon'])
+  })
+
+  it('finds a match in the middle of a word, ranked last', () => {
+    const results = createCatalogue([
+      makeShow({ name: 'Holocaust', rating: 9 }),
+      makeShow({ name: 'Cause and Effect', rating: 5 }),
+      makeShow({ name: 'Just Cause', rating: 6 }),
+    ]).search({ query: 'caus', ...firstPage })
+
+    expect(names(results.items)).toEqual(['Cause and Effect', 'Just Cause', 'Holocaust'])
   })
 
   it('can be narrowed to a genre', () => {
