@@ -44,6 +44,37 @@ describe('show detail page', () => {
     })
   })
 
+  it('fills the header with the show’s backdrop artwork', async () => {
+    const details = makeShowDetails()
+    showApi(details)
+
+    const { wrapper } = await renderApp('/shows/169')
+    const backdrop = wrapper.get('[data-test="backdrop"]')
+
+    expect(backdrop.attributes()).toMatchObject({ src: details.backdrop, alt: '', 'data-source': 'backdrop' })
+    expect(wrapper.find('[data-test="hero-poster"]').exists()).toBe(false)
+  })
+
+  it('falls back to a blurred poster behind the title, with the sharp poster beside it', async () => {
+    const details = makeShowDetails({ backdrop: null })
+    showApi(details)
+
+    const { wrapper } = await renderApp('/shows/169')
+
+    expect(wrapper.get('[data-test="backdrop"]').attributes()).toMatchObject({ src: details.poster, 'data-source': 'poster' })
+    expect(wrapper.get('[data-test="hero-poster"] img').attributes('src')).toBe(details.poster)
+  })
+
+  it('shows a plain header when a show has no artwork at all', async () => {
+    showApi(makeShowDetails({ backdrop: null, poster: null, image: null }))
+
+    const { wrapper } = await renderApp('/shows/169')
+
+    expect(wrapper.find('[data-test="backdrop"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="hero-poster"]').exists()).toBe(false)
+    expect(wrapper.get('h1').text()).toBe('Breaking Bad')
+  })
+
   it('copes with a show we know little about', async () => {
     showApi(
       makeShowDetails({
