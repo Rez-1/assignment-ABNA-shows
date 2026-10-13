@@ -1,7 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { makeGenreRow, makeShow } from '@/testing/fixtures'
-import { fakeApi, renderApp } from '@/testing/renderApp'
+import { fakeApi, jsonResponse, renderApp } from '@/testing/renderApp'
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -97,6 +97,27 @@ describe('dashboard', () => {
 
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="skeleton-card"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
+  })
+
+  it('explains a failure in the server’s words and recovers on "Try again"', async () => {
+    let attempts = 0
+    fakeApi({
+      '/api/genres?limit=20': () =>
+        ++attempts === 1
+          ? jsonResponse({ message: 'The show database is not responding. Try again shortly.' }, 502)
+          : [makeGenreRow('Drama', [makeShow()])],
+    })
+
+    const { wrapper } = await renderApp('/')
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('The show database is not responding. Try again shortly.')
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+
+    await wrapper.get('[role="alert"] button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
   })
 
