@@ -121,6 +121,32 @@ describe('dashboard', () => {
     expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
   })
 
+  it('says so when the server cannot be reached at all', async () => {
+    fakeApi({
+      '/api/genres?limit=20': () => {
+        throw new TypeError('Failed to fetch')
+      },
+    })
+
+    const { wrapper } = await renderApp('/')
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('Could not reach the server')
+    expect(wrapper.get('[role="alert"]').text()).not.toContain('Failed to fetch')
+  })
+
+  it('keeps the genres when you come back, without asking the server again', async () => {
+    const fetch = fakeApi({ '/api/genres?limit=20': [makeGenreRow('Drama', [makeShow({ id: 5, name: 'Lost' })])] })
+    const { wrapper, router } = await renderApp('/')
+
+    await router.push('/shows/5')
+    await flushPromises()
+    await router.push('/')
+    await flushPromises()
+
+    expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
+    expect(fetch.mock.calls.filter(([url]) => url === '/api/genres?limit=20')).toHaveLength(1)
+  })
+
   it('shows each poster lazily, with a placeholder when it is missing or fails to load', async () => {
     const poster = 'https://static.tvmaze.com/uploads/images/medium_portrait/1/1.jpg'
     fakeApi({
