@@ -88,6 +88,7 @@ const heading = computed(() => {
 <style scoped>
 .search-page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
 }
 

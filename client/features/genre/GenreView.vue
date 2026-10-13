@@ -62,6 +62,7 @@ const isUnknownGenre = computed(() => error.value instanceof ApiError && error.v
 <style scoped>
 .genre {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
 }
 

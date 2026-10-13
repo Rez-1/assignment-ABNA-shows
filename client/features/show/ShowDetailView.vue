@@ -71,6 +71,7 @@ usePageTitle(() => show.value?.name ?? (isMissing.value ? 'Show not found' : nul
 <style scoped>
 .show__sections {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-12);
 }
 

@@ -43,6 +43,8 @@ onMounted(genres.ensureLoaded)
 <style scoped>
 .dashboard {
   display: grid;
+  /* minmax(0, …) stops the scrolling rows from stretching the page sideways. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-8);
 }
 
