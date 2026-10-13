@@ -8,6 +8,7 @@ import ShowGrid from '@/shared/components/ShowGrid.vue'
 import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
+import { usePageTitle } from '@/shared/composables/usePageTitle'
 import { formatCount } from '@/shared/utils/format'
 import { searchShows } from './api'
 
@@ -33,6 +34,8 @@ const selectedGenre = computed({
   get: () => props.genre ?? '',
   set: (genre) => router.push({ name: 'search', query: { q: props.query, genre: genre || undefined } }),
 })
+
+usePageTitle(() => (props.query ? `“${props.query}”` : 'Search'))
 
 const scope = computed(() => `“${props.query}”${props.genre ? ` in ${props.genre}` : ''}`)
 

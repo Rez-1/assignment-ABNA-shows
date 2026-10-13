@@ -52,6 +52,7 @@ export function createAppRouter(history: RouterHistory) {
         component: () => import('@/features/show/ShowDetailView.vue'),
         props: (route) => ({ id: toShowId(route.params.id) }),
       },
+      { path: '/:path(.*)*', name: 'not-found', component: () => import('@/app/NotFoundView.vue') },
     ],
   })
 }

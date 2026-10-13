@@ -6,6 +6,7 @@ import ShowGrid from '@/shared/components/ShowGrid.vue'
 import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
+import { usePageTitle } from '@/shared/composables/usePageTitle'
 import { formatCount } from '@/shared/utils/format'
 import { fetchGenreShows } from './api'
 
@@ -20,6 +21,8 @@ const {
   () => ({ genre: props.genre, page: props.page }),
   ({ genre, page }, signal) => fetchGenreShows(genre, page, signal),
 )
+
+usePageTitle(() => props.genre)
 
 const isUnknownGenre = computed(() => error.value instanceof ApiError && error.value.status === 404)
 </script>

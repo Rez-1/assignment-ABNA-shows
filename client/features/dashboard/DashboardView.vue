@@ -2,12 +2,14 @@
 import { onMounted } from 'vue'
 import SkeletonCard from '@/shared/components/SkeletonCard.vue'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
+import { usePageTitle } from '@/shared/composables/usePageTitle'
 import GenreQuickLinks from './GenreQuickLinks.vue'
 import GenreRow from './GenreRow.vue'
 import { useGenresStore } from './genresStore'
 
 const genres = useGenresStore()
 
+usePageTitle(() => null)
 onMounted(genres.ensureLoaded)
 </script>
 

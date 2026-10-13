@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { ApiError } from '@/shared/api/http'
 import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
+import { usePageTitle } from '@/shared/composables/usePageTitle'
 import CastRow from './CastRow.vue'
 import RelatedShows from './RelatedShows.vue'
 import ShowHero from './ShowHero.vue'
@@ -25,6 +26,8 @@ const {
 )
 
 const isMissing = computed(() => error.value instanceof ApiError && error.value.status === 404)
+
+usePageTitle(() => show.value?.name ?? (isMissing.value ? 'Show not found' : null))
 </script>
 
 <template>
