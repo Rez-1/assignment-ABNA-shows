@@ -13,7 +13,7 @@ export function createAppRouter(history: RouterHistory) {
     },
     routes: [
       { path: '/', name: 'dashboard', component: DashboardView },
-      { path: '/genres/:genre', name: 'genre', component: () => import('@/features/genre/GenreView.vue') },
+      { path: '/genres/:genre', name: 'genre', component: () => import('@/features/genre/GenreView.vue'), props: true },
       { path: '/shows/:id', name: 'show', component: () => import('@/features/show/ShowDetailView.vue') },
     ],
   })
