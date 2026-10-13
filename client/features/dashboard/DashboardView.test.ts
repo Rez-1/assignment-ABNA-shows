@@ -48,6 +48,16 @@ describe('dashboard', () => {
     expect(unrated!.get('[data-test="rating"]').text()).toBe('Not rated')
   })
 
+  it('presents each genre as a horizontally scrollable, labelled list', async () => {
+    fakeApi({ '/api/genres?limit=20': [makeGenreRow('Drama', [makeShow(), makeShow()])] })
+
+    const { wrapper } = await renderApp('/')
+    const row = wrapper.get('[data-test="genre-row"]')
+
+    expect(row.get('ul').attributes('aria-label')).toBe('Drama shows')
+    expect(row.find('button[aria-label="Scroll Drama shows forward"]').exists()).toBe(true)
+  })
+
   it('tells how many shows a genre has and links to all of them', async () => {
     fakeApi({
       '/api/genres?limit=20': [

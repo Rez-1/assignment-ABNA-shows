@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { GenreRow } from '../../../shared/types.ts'
 import AppIcon from '@/shared/components/AppIcon.vue'
+import HorizontalScroller from '@/shared/components/HorizontalScroller.vue'
 import ShowCard from '@/shared/components/ShowCard.vue'
 import { formatCount, genreAnchor } from '@/shared/utils/format'
 
@@ -21,11 +22,11 @@ defineProps<{ row: GenreRow }>()
         View all <AppIcon name="chevron-right" />
       </RouterLink>
     </header>
-    <ul class="genre-row__shows">
+    <HorizontalScroller :label="`${row.genre} shows`">
       <li v-for="show in row.shows" :key="show.id">
         <ShowCard :show="show" />
       </li>
-    </ul>
+    </HorizontalScroller>
   </section>
 </template>
 
@@ -53,10 +54,5 @@ defineProps<{ row: GenreRow }>()
   margin-left: auto;
   font-size: var(--text-sm);
   white-space: nowrap;
-}
-
-.genre-row__shows {
-  display: flex;
-  gap: var(--space-4);
 }
 </style>
