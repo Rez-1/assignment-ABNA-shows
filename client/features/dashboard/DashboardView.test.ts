@@ -1,3 +1,4 @@
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { makeGenreRow, makeShow } from '@/testing/fixtures'
 import { fakeApi, renderApp } from '@/testing/renderApp'
@@ -79,6 +80,24 @@ describe('dashboard', () => {
       'genre-drama',
       'genre-science-fiction',
     ])
+  })
+
+  it('shows placeholders while the genres load', async () => {
+    let respond!: (rows: unknown) => void
+    fakeApi({ '/api/genres?limit=20': () => new Promise((resolve) => (respond = resolve)) })
+
+    const { wrapper } = await renderApp('/')
+
+    expect(wrapper.get('[role="status"]').text()).toBe('Loading shows')
+    expect(wrapper.findAll('[data-test="skeleton-card"]').length).toBeGreaterThan(0)
+    expect(wrapper.find('[data-test="genre-row"]').exists()).toBe(false)
+
+    respond([makeGenreRow('Drama', [makeShow()])])
+    await flushPromises()
+
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="skeleton-card"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
   })
 
   it('shows each poster lazily, with a placeholder when it is missing or fails to load', async () => {
