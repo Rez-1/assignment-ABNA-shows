@@ -21,3 +21,12 @@ export function formatYears(premiered: string | null, ended: string | null, stat
 export function formatRuntime(minutes: number | null): string | null {
   return minutes ? `${minutes} min` : null
 }
+
+const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+/** Formats an ISO date such as "2008-01-20" as "20 Jan 2008"; null when missing or invalid. */
+export function formatDate(isoDate: string | null): string | null {
+  if (!isoDate) return null
+  const date = new Date(isoDate)
+  return Number.isNaN(date.getTime()) ? null : dateFormat.format(date)
+}

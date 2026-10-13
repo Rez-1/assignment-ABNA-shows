@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { makePage, makeShowDetails } from '@/testing/fixtures'
-import { type FakeRoutes, fakeApi, renderApp } from '@/testing/renderApp'
+import { makeEpisode, makePage, makeShowDetails } from '@/testing/fixtures'
+import { type FakeRoutes, fakeApi, renderApp, settle } from '@/testing/renderApp'
 
 afterEach(() => {
   document.body.innerHTML = ''
 })
+
+type App = Awaited<ReturnType<typeof renderApp>>['wrapper']
 
 /** A fake server that knows one show; related shows and episodes default to empty. */
 function showApi(details = makeShowDetails(), routes: FakeRoutes = {}) {
@@ -102,6 +104,62 @@ describe('show detail page', () => {
     const { wrapper } = await renderApp('/shows/169')
 
     expect(wrapper.find('section[aria-labelledby="cast-heading"]').exists()).toBe(false)
+  })
+
+  describe('seasons and episodes', () => {
+    const seasons = [
+      { id: 753, number: 1, episodeCount: 7, premiereDate: '2008-01-20', image: 'https://static.tvmaze.com/season1.jpg' },
+      { id: 754, number: 2, episodeCount: 1, premiereDate: '2009-03-08', image: null },
+    ]
+    const seasonButtons = (wrapper: App) => wrapper.findAll('[data-test="season"]')
+    const episodeNames = (wrapper: App) => wrapper.findAll('[data-test="episode-name"]').map((name) => name.text())
+
+    it('lists the seasons and opens with the first season’s episodes', async () => {
+      showApi(makeShowDetails({ seasons }), {
+        '/api/seasons/753/episodes': [
+          makeEpisode({ number: 1, name: 'Pilot', airdate: '2008-01-20', image: 'https://static.tvmaze.com/pilot.jpg' }),
+          makeEpisode({ number: 2, name: 'Cat’s in the Bag...', airdate: null }),
+        ],
+      })
+
+      const { wrapper } = await renderApp('/shows/169')
+
+      expect(wrapper.get('#seasons-heading').text()).toBe('2 seasons')
+      expect(seasonButtons(wrapper).map((button) => button.text())).toEqual(['Season 12008 · 7 episodes', 'Season 22009 · 1 episode'])
+      expect(seasonButtons(wrapper).map((button) => button.attributes('aria-pressed'))).toEqual(['true', 'false'])
+
+      expect(wrapper.get('#episodes-heading').text()).toBe('Season 1 episodes')
+      expect(episodeNames(wrapper)).toEqual(['Pilot', 'Cat’s in the Bag...'])
+      const [pilot, second] = wrapper.findAll('[data-test="episode"]')
+      expect(pilot!.text()).toContain('E1')
+      expect(pilot!.text()).toContain('20 Jan 2008')
+      expect(pilot!.get('img').attributes('src')).toBe('https://static.tvmaze.com/pilot.jpg')
+      expect(second!.text()).toContain('E2')
+    })
+
+    it('shows another season’s episodes when you pick it', async () => {
+      showApi(makeShowDetails({ seasons }), {
+        '/api/seasons/753/episodes': [makeEpisode({ name: 'Pilot' })],
+        '/api/seasons/754/episodes': [makeEpisode({ season: 2, name: 'Seven Thirty-Seven' })],
+      })
+      const { wrapper } = await renderApp('/shows/169')
+
+      await seasonButtons(wrapper)[1]!.trigger('click')
+      await settle()
+
+      expect(seasonButtons(wrapper).map((button) => button.attributes('aria-pressed'))).toEqual(['false', 'true'])
+      expect(wrapper.get('#episodes-heading').text()).toBe('Season 2 episodes')
+      expect(episodeNames(wrapper)).toEqual(['Seven Thirty-Seven'])
+    })
+
+    it('leaves out both sections when a show has no seasons', async () => {
+      showApi(makeShowDetails({ seasons: [] }))
+
+      const { wrapper } = await renderApp('/shows/169')
+
+      expect(wrapper.find('#seasons-heading').exists()).toBe(false)
+      expect(wrapper.find('#episodes-heading').exists()).toBe(false)
+    })
   })
 
   it('copes with a show we know little about', async () => {
