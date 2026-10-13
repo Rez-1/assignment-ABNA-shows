@@ -1,6 +1,7 @@
 import type { ApiErrorBody } from '../../../shared/types.ts'
 
 export class ApiError extends Error {
+  /** HTTP status, or 0 when the server could not be reached at all. */
   readonly status: number
 
   constructor(message: string, status: number) {
@@ -36,7 +37,12 @@ async function readMessage(response: Response): Promise<string> {
 
 /** GETs JSON from our own API. A failed request throws an ApiError whose message is fit to show. */
 export async function getJson<T>(path: string, { params }: RequestOptions = {}): Promise<T> {
-  const response = await fetch(buildUrl(path, params), { headers: { accept: 'application/json' } })
+  let response: Response
+  try {
+    response = await fetch(buildUrl(path, params), { headers: { accept: 'application/json' } })
+  } catch {
+    throw new ApiError('Could not reach the server. Check your connection and try again.', 0)
+  }
   if (!response.ok) throw new ApiError(await readMessage(response), response.status)
   return (await response.json()) as T
 }
