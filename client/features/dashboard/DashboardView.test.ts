@@ -46,4 +46,26 @@ describe('dashboard', () => {
     expect(wholeNumber!.get('[data-test="rating"]').text()).toBe('8.0')
     expect(unrated!.get('[data-test="rating"]').text()).toBe('Not rated')
   })
+
+  it('shows each poster lazily, with a placeholder when it is missing or fails to load', async () => {
+    const poster = 'https://static.tvmaze.com/uploads/images/medium_portrait/1/1.jpg'
+    fakeApi({
+      '/api/genres?limit=20': [
+        makeGenreRow('Drama', [makeShow({ image: poster }), makeShow({ image: null }), makeShow({ image: poster })]),
+      ],
+    })
+
+    const { wrapper } = await renderApp('/')
+    const [withPoster, withoutPoster, broken] = wrapper.findAll('[data-test="show-card"]')
+
+    expect(withPoster!.get('img').attributes()).toMatchObject({ src: poster, alt: '', loading: 'lazy' })
+    expect(withPoster!.find('[data-test="artwork-placeholder"]').exists()).toBe(false)
+    expect(withoutPoster!.find('img').exists()).toBe(false)
+    expect(withoutPoster!.find('[data-test="artwork-placeholder"]').exists()).toBe(true)
+
+    await broken!.get('img').trigger('error')
+
+    expect(broken!.find('img').exists()).toBe(false)
+    expect(broken!.find('[data-test="artwork-placeholder"]').exists()).toBe(true)
+  })
 })
