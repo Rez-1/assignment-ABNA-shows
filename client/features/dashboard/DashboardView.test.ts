@@ -24,4 +24,26 @@ describe('dashboard', () => {
     expect(texts(rows[0]!.findAll('[data-test="show-name"]'))).toEqual(['Breaking Bad', 'The Wire'])
     expect(texts(rows[1]!.findAll('[data-test="show-name"]'))).toEqual(['Fleabag'])
   })
+
+  it('links each show to its detail page and shows its rating and year', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [
+        makeGenreRow('Drama', [
+          makeShow({ id: 169, name: 'Breaking Bad', rating: 9.2, year: 2008 }),
+          makeShow({ id: 7, name: 'Whole Number', rating: 8, year: null }),
+          makeShow({ id: 8, name: 'Obscure', rating: null, year: 1999 }),
+        ]),
+      ],
+    })
+
+    const { wrapper } = await renderApp('/')
+    const [rated, wholeNumber, unrated] = wrapper.findAll('[data-test="show-card"]')
+
+    expect(rated!.attributes('href')).toBe('/shows/169')
+    expect(rated!.text()).toContain('9.2')
+    expect(rated!.text()).toContain('2008')
+    expect(rated!.get('[data-test="rating"]').attributes('aria-label')).toBe('Rated 9.2 out of 10')
+    expect(wholeNumber!.get('[data-test="rating"]').text()).toBe('8.0')
+    expect(unrated!.get('[data-test="rating"]').text()).toBe('Not rated')
+  })
 })

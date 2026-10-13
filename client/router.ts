@@ -5,6 +5,9 @@ import DashboardView from '@/features/dashboard/DashboardView.vue'
 export function createAppRouter(history: RouterHistory) {
   return createRouter({
     history,
-    routes: [{ path: '/', name: 'dashboard', component: DashboardView }],
+    routes: [
+      { path: '/', name: 'dashboard', component: DashboardView },
+      { path: '/shows/:id', name: 'show', component: () => import('@/features/show/ShowDetailView.vue') },
+    ],
   })
 }
