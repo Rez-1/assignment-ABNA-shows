@@ -41,7 +41,12 @@ export function createAppRouter(history: RouterHistory) {
           page: toPageNumber(route.query.page),
         }),
       },
-      { path: '/shows/:id', name: 'show', component: () => import('@/features/show/ShowDetailView.vue') },
+      {
+        path: '/shows/:id',
+        name: 'show',
+        component: () => import('@/features/show/ShowDetailView.vue'),
+        props: (route) => ({ id: Number(route.params.id) }),
+      },
     ],
   })
 }
