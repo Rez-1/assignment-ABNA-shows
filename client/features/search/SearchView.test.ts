@@ -99,6 +99,36 @@ describe('searching by name', () => {
     expect(names(wrapper)).toEqual(['Lost Girl'])
   })
 
+  it('keeps the genre from a shared link selected, even when the list of genres cannot be loaded', async () => {
+    fakeApi({
+      '/api/genres?limit=20': jsonResponse({ message: 'Something went wrong' }, 500),
+      '/api/shows/search?q=lost&genre=Fantasy&page=1': makePage([makeShow({ name: 'Lost Girl' })]),
+    })
+
+    const { wrapper } = await renderApp('/search?q=lost&genre=Fantasy')
+    const genreSelect = wrapper.get('select[aria-label="Genre"]')
+
+    expect((genreSelect.element as HTMLSelectElement).value).toBe('Fantasy')
+    expect(genreSelect.findAll('option').map((option) => option.text())).toEqual(['All genres', 'Fantasy'])
+    expect(names(wrapper)).toEqual(['Lost Girl'])
+  })
+
+  it('asks the server for the genres once, however many screens use them', async () => {
+    const fetch = fakeApi({
+      '/api/genres?limit=20': [makeGenreRow('Drama', [])],
+      '/api/shows/search?q=lost&page=1': makePage([makeShow({ name: 'Lost' })]),
+    })
+    const { wrapper, router } = await renderApp('/search?q=lost')
+
+    await router.push('/')
+    await settle()
+    await router.push('/search?q=lost')
+    await settle()
+
+    expect(wrapper.get('select[aria-label="Genre"]').findAll('option')).toHaveLength(2)
+    expect(fetch.mock.calls.filter(([url]) => url === '/api/genres?limit=20')).toHaveLength(1)
+  })
+
   it('asks for a name when the search is empty, without asking the server', async () => {
     const fetch = fakeApi({ '/api/genres?limit=20': [] })
 

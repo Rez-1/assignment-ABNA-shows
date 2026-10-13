@@ -1,5 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import { makeGenreRow, makeShow } from '@/testing/fixtures'
 import { fakeApi, jsonResponse, renderApp } from '@/testing/renderApp'
 
@@ -164,6 +165,19 @@ describe('dashboard', () => {
 
     expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
     expect(fetch.mock.calls.filter(([url]) => url === '/api/genres?limit=20')).toHaveLength(1)
+  })
+
+  it('shows the genres at once when you come back, with no placeholders in between', async () => {
+    fakeApi({ '/api/genres?limit=20': [makeGenreRow('Drama', [makeShow({ id: 5, name: 'Lost' })])] })
+    const { wrapper, router } = await renderApp('/')
+    await router.push('/genres/Drama')
+    await flushPromises()
+
+    await router.push('/')
+    await nextTick()
+
+    expect(wrapper.find('[data-test="skeleton-card"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-test="genre-row"]')).toHaveLength(1)
   })
 
   it('shows each poster lazily, with a placeholder when it is missing or fails to load', async () => {

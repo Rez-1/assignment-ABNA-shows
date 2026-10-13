@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useGenresStore } from '@/features/dashboard/genresStore'
+import { useGenreRows } from '@/features/dashboard/genresStore'
 import GenreSelect from '@/shared/components/GenreSelect.vue'
 import PageLinks from '@/shared/components/PageLinks.vue'
 import ResourceState from '@/shared/components/ResourceState.vue'
@@ -16,8 +16,7 @@ import { searchShows } from './api'
 const props = defineProps<{ query: string; genre?: string; page: number }>()
 
 const router = useRouter()
-const genres = useGenresStore()
-onMounted(genres.ensureLoaded)
+const { genreNames } = useGenreRows()
 
 const resource = useAsyncResource(
   // Nothing to look for yet: a null source skips the request rather than ask the server for an empty search.
@@ -46,7 +45,7 @@ const heading = computed(() => {
   <div class="page search-page">
     <header class="search-page__header">
       <h1 class="page-title search-page__title">{{ heading }}</h1>
-      <GenreSelect v-if="query" v-model="selectedGenre" :genres="genres.genreNames" />
+      <GenreSelect v-if="query" v-model="selectedGenre" :genres="genreNames" />
     </header>
 
     <!-- Always present, so screen readers announce each change as results come in while typing. -->

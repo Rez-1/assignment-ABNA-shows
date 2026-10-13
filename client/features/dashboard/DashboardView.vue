@@ -1,42 +1,32 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import ResourceState from '@/shared/components/ResourceState.vue'
 import SkeletonCard from '@/shared/components/SkeletonCard.vue'
-import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { usePageTitle } from '@/shared/composables/usePageTitle'
 import GenreQuickLinks from './GenreQuickLinks.vue'
 import GenreRow from './GenreRow.vue'
-import { useGenresStore } from './genresStore'
+import { useGenreRows } from './genresStore'
 
-const genres = useGenresStore()
+const genres = useGenreRows()
 
 usePageTitle(() => null)
-onMounted(genres.ensureLoaded)
 </script>
 
 <template>
   <div class="page dashboard">
     <h1 class="visually-hidden">TV shows by genre</h1>
 
-    <StatusMessage
-      v-if="genres.status === 'error'"
-      variant="error"
-      title="Shows could not be loaded"
-      :message="genres.errorMessage"
-      retryable
-      @retry="genres.load"
-    />
+    <ResourceState :resource="genres" error-title="Shows could not be loaded" loading-label="Loading shows">
+      <template #loading>
+        <div v-for="row in 3" :key="row" class="dashboard__skeleton-row">
+          <SkeletonCard v-for="card in 8" :key="card" class="dashboard__skeleton-card" />
+        </div>
+      </template>
 
-    <template v-else-if="genres.status === 'success'">
-      <GenreQuickLinks :genres="genres.genreNames" />
-      <GenreRow v-for="row in genres.rows" :key="row.genre" :row="row" />
-    </template>
-
-    <template v-else>
-      <p role="status" class="visually-hidden">Loading shows</p>
-      <div v-for="row in 3" :key="row" class="dashboard__skeleton-row">
-        <SkeletonCard v-for="card in 8" :key="card" class="dashboard__skeleton-card" />
-      </div>
-    </template>
+      <template #default="{ data: rows }">
+        <GenreQuickLinks :genres="genres.genreNames.value" />
+        <GenreRow v-for="row in rows" :key="row.genre" :row="row" />
+      </template>
+    </ResourceState>
   </div>
 </template>
 

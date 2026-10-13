@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 import type { GenreRow } from '../../../shared/types.ts'
+import { remember } from '@/shared/api/remember'
+import { type AsyncResource, useAsyncResource } from '@/shared/composables/useAsyncResource'
 import { fetchGenreRows } from './api'
 
 /**
@@ -9,27 +11,17 @@ import { fetchGenreRows } from './api'
  * use the genre names (for example to filter search results).
  */
 export const useGenresStore = defineStore('genres', () => {
-  const rows = ref<GenreRow[]>([])
-  const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const errorMessage = ref('')
+  // One key: there is a single set of rows.
+  const load = remember<true, GenreRow[]>(fetchGenreRows)
 
-  const genreNames = computed(() => rows.value.map((row) => row.genre))
-
-  async function load() {
-    status.value = 'loading'
-    try {
-      rows.value = await fetchGenreRows()
-      status.value = 'success'
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : 'Something went wrong'
-      status.value = 'error'
-    }
-  }
-
-  /** Loads the rows unless they are already here or on their way. */
-  async function ensureLoaded() {
-    if (status.value === 'idle' || status.value === 'error') await load()
-  }
-
-  return { rows, status, errorMessage, genreNames, load, ensureLoaded }
+  return { load }
 })
+
+/** The genre rows for a screen: asked for once, then shared by every screen that uses them. */
+export function useGenreRows(): AsyncResource<GenreRow[]> & { genreNames: ComputedRef<string[]> } {
+  const { load } = useGenresStore()
+  const resource = useAsyncResource(() => true as const, load)
+  const genreNames = computed(() => (resource.data.value ?? []).map((row) => row.genre))
+
+  return { ...resource, genreNames }
+}

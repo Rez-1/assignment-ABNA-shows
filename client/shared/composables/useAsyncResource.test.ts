@@ -7,7 +7,7 @@ import { type AsyncResourceOptions, useAsyncResource } from './useAsyncResource'
 /** Runs the composable in its own scope, as a component would. */
 function setup<Source, Data>(
   source: () => Source,
-  fetcher: (value: NonNullable<Source>, signal: AbortSignal) => Promise<Data>,
+  fetcher: (value: NonNullable<Source>, signal: AbortSignal) => Data | Promise<Data>,
   options?: AsyncResourceOptions,
 ) {
   const scope = effectScope()
@@ -133,6 +133,16 @@ describe('useAsyncResource', () => {
     answer('results for fargo')
     await flushPromises()
     expect(data.value).toBe('results for fargo')
+  })
+
+  it('is ready at once when the answer is already known, with no loading state in between', () => {
+    const { data, status } = setup(
+      () => 7,
+      () => 'show 7',
+    )
+
+    expect(status.value).toBe('success')
+    expect(data.value).toBe('show 7')
   })
 
   it('stays idle without asking while the source is null, and loads once there is something to ask for', async () => {

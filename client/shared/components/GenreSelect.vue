@@ -1,14 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 /** A drop-down to pick one genre, or all of them (the empty value). */
-defineProps<{ genres: readonly string[] }>()
+const props = defineProps<{ genres: readonly string[] }>()
 
 const selected = defineModel<string>({ default: '' })
+
+// The chosen genre is always on offer, so it stays selected before the list arrives or if it never does.
+const options = computed(() =>
+  selected.value && !props.genres.includes(selected.value) ? [selected.value, ...props.genres] : props.genres,
+)
 </script>
 
 <template>
   <select v-model="selected" class="genre-select" aria-label="Genre">
     <option value="">All genres</option>
-    <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
+    <option v-for="genre in options" :key="genre" :value="genre">{{ genre }}</option>
   </select>
 </template>
 

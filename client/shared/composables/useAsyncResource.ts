@@ -26,11 +26,12 @@ export interface AsyncResource<Data> {
  * Loads data whenever `source` changes and exposes it with loading and error
  * state. A newer request always wins: the previous one is aborted and its
  * outcome ignored, so a slow early response can never overwrite a later one.
- * While `source` is null nothing is requested.
+ * While `source` is null nothing is requested. A fetcher that already knows the
+ * answer may return it without a promise; it is then ready with no loading state.
  */
 export function useAsyncResource<Source, Data>(
   source: WatchSource<Source>,
-  fetcher: (value: NonNullable<Source>, signal: AbortSignal) => Promise<Data>,
+  fetcher: (value: NonNullable<Source>, signal: AbortSignal) => Data | Promise<Data>,
   { nullSource = 'idle' }: AsyncResourceOptions = {},
 ): AsyncResource<Data> {
   const data = shallowRef<Data | null>(null)
@@ -51,11 +52,14 @@ export function useAsyncResource<Source, Data>(
       status.value = nullSource
       return
     }
-    status.value = 'loading'
 
     try {
-      const result = await fetcher(value, current.signal)
-      if (current.signal.aborted) return
+      let result = fetcher(value, current.signal)
+      if (result instanceof Promise) {
+        status.value = 'loading'
+        result = await result
+        if (current.signal.aborted) return
+      }
       data.value = result
       status.value = 'success'
     } catch (cause) {
