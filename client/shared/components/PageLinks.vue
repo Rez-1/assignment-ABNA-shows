@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useRoute, type RouteLocationRaw } from 'vue-router'
+import { useRoute } from 'vue-router'
+import { pageLocation } from '@/shared/utils/locations'
 import AppIcon from './AppIcon.vue'
 
 /**
@@ -9,20 +10,15 @@ import AppIcon from './AppIcon.vue'
 defineProps<{ page: number; pageCount: number }>()
 
 const route = useRoute()
-
-function linkTo(page: number): RouteLocationRaw {
-  // Page 1 is the default, so it is left out of the URL.
-  return { query: { ...route.query, page: page > 1 ? page : undefined } }
-}
 </script>
 
 <template>
   <nav v-if="pageCount > 1" class="pages" aria-label="Pages">
-    <RouterLink v-if="page > 1" :to="linkTo(page - 1)" rel="prev" class="pages__link">
+    <RouterLink v-if="page > 1" :to="pageLocation(route, page - 1)" rel="prev" class="pages__link">
       <AppIcon name="chevron-left" /> Previous
     </RouterLink>
     <span class="pages__status muted">Page {{ page }} of {{ pageCount }}</span>
-    <RouterLink v-if="page < pageCount" :to="linkTo(page + 1)" rel="next" class="pages__link pages__link--next">
+    <RouterLink v-if="page < pageCount" :to="pageLocation(route, page + 1)" rel="next" class="pages__link pages__link--next">
       Next <AppIcon name="chevron-right" />
     </RouterLink>
   </nav>

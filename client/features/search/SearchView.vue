@@ -11,6 +11,7 @@ import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
 import { usePageTitle } from '@/shared/composables/usePageTitle'
 import { formatCount } from '@/shared/utils/format'
+import { searchLocation } from '@/shared/utils/locations'
 import { searchShows } from './api'
 
 const props = defineProps<{ query: string; genre?: string; page: number }>()
@@ -25,10 +26,10 @@ const resource = useAsyncResource(
 )
 const result = resource.data
 
-// The URL holds the search; picking a genre rewrites it and starts again from page one.
+// The URL holds the search; picking a genre rewrites it.
 const selectedGenre = computed({
   get: () => props.genre ?? '',
-  set: (genre) => router.push({ name: 'search', query: { q: props.query, genre: genre || undefined } }),
+  set: (genre) => router.push(searchLocation({ query: props.query, genre })),
 })
 
 usePageTitle(() => (props.query ? `“${props.query}”` : 'Search'))
@@ -68,7 +69,7 @@ const heading = computed(() => {
           :title="`No shows match ${scope}`"
           message="Check the spelling or try a shorter part of the name."
         >
-          <RouterLink v-if="genre" :to="{ name: 'search', query: { q: query } }" class="text-link" data-test="all-genres">
+          <RouterLink v-if="genre" :to="searchLocation({ query })" class="text-link" data-test="all-genres">
             Search all genres
           </RouterLink>
         </StatusMessage>

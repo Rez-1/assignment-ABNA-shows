@@ -2,20 +2,21 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SearchBox from '@/features/search/SearchBox.vue'
+import { readSearch, searchLocation } from '@/shared/utils/locations'
 
 const route = useRoute()
 const router = useRouter()
 
 const onSearchPage = computed(() => route.name === 'search')
-const term = computed(() => (onSearchPage.value && typeof route.query.q === 'string' ? route.query.q : ''))
+const term = computed(() => (onSearchPage.value ? readSearch(route).query : ''))
 
 /** The URL is the single source of truth for a search; this only updates it. */
 function search(text: string) {
   if (onSearchPage.value) {
     // Refining a search replaces the history entry, so Back leaves the search page in one step.
-    router.replace({ name: 'search', query: { q: text || undefined, genre: route.query.genre } })
+    router.replace(searchLocation({ query: text, genre: readSearch(route).genre }))
   } else if (text) {
-    router.push({ name: 'search', query: { q: text } })
+    router.push(searchLocation({ query: text }))
   }
 }
 </script>

@@ -129,6 +129,22 @@ describe('searching by name', () => {
     expect(fetch.mock.calls.filter(([url]) => url === '/api/genres?limit=20')).toHaveLength(1)
   })
 
+  it('drops a genre that the address gives more than once when the search text changes', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [],
+      '/api/shows/search?q=lost&page=1': makePage([makeShow({ name: 'Lost' })]),
+      '/api/shows/search?q=fargo&page=1': makePage([makeShow({ name: 'Fargo' })]),
+    })
+    const { wrapper, router } = await renderApp('/search?q=lost&genre=Drama&genre=Crime')
+
+    await searchBox(wrapper).setValue('fargo')
+    await wrapper.get('header form[role="search"]').trigger('submit')
+    await settle()
+
+    expect(router.currentRoute.value.fullPath).toBe('/search?q=fargo')
+    expect(names(wrapper)).toEqual(['Fargo'])
+  })
+
   it('asks for a name when the search is empty, without asking the server', async () => {
     const fetch = fakeApi({ '/api/genres?limit=20': [] })
 

@@ -7,6 +7,7 @@ import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
 import { usePageTitle } from '@/shared/composables/usePageTitle'
 import { formatCount } from '@/shared/utils/format'
+import { pageLocation } from '@/shared/utils/locations'
 import { fetchGenreShows } from './api'
 
 const props = defineProps<{ genre: string; page: number }>()
@@ -39,7 +40,7 @@ usePageTitle(() => props.genre)
 
       <template #default="{ data: result }">
         <StatusMessage v-if="result.items.length === 0" title="There are no shows on this page">
-          <RouterLink :to="{ query: {} }" class="text-link" data-test="first-page">Go to the first page</RouterLink>
+          <RouterLink :to="pageLocation($route, 1)" class="text-link" data-test="first-page">Go to the first page</RouterLink>
         </StatusMessage>
         <ShowGrid v-else :shows="result.items" />
         <PageLinks :page="result.page" :page-count="result.pageCount" />

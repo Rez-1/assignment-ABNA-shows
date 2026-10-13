@@ -1,21 +1,10 @@
-import { createRouter, type LocationQueryValue, type RouterHistory } from 'vue-router'
+import { createRouter, type RouterHistory } from 'vue-router'
 import DashboardView from '@/features/dashboard/DashboardView.vue'
-
-type QueryValue = LocationQueryValue | LocationQueryValue[] | undefined
-
-/** Reads `?page=` from the URL; anything that is not a positive whole number means page 1. */
-function toPageNumber(value: QueryValue): number {
-  const page = Number(value)
-  return Number.isInteger(page) && page > 0 ? page : 1
-}
+import { readPage, readSearch } from '@/shared/utils/locations'
 
 /** A show id from the URL, or null when it is not a positive whole number. */
 function toShowId(value: string | string[] | undefined): number | null {
   return typeof value === 'string' && /^[1-9]\d{0,9}$/.test(value) ? Number(value) : null
-}
-
-function toText(value: QueryValue): string {
-  return typeof value === 'string' ? value.trim() : ''
 }
 
 /** The history is passed in so tests can run the real router in memory. */
@@ -34,17 +23,13 @@ export function createAppRouter(history: RouterHistory) {
         path: '/genres/:genre',
         name: 'genre',
         component: () => import('@/features/genre/GenreView.vue'),
-        props: (route) => ({ genre: String(route.params.genre), page: toPageNumber(route.query.page) }),
+        props: (route) => ({ genre: String(route.params.genre), page: readPage(route) }),
       },
       {
         path: '/search',
         name: 'search',
         component: () => import('@/features/search/SearchView.vue'),
-        props: (route) => ({
-          query: toText(route.query.q),
-          genre: toText(route.query.genre) || undefined,
-          page: toPageNumber(route.query.page),
-        }),
+        props: readSearch,
       },
       {
         path: '/shows/:id',

@@ -93,6 +93,15 @@ describe('genre page', () => {
     expect(names(wrapper)).toEqual(['Lost'])
   })
 
+  it('opens the first page when the page in the address is not a plain whole number', async () => {
+    const fetch = fakeApi({ '/api/genres/Drama/shows?page=1': makePage([makeShow({ name: 'Lost' })]) })
+
+    const { wrapper } = await renderApp('/genres/Drama?page=1e3')
+
+    expect(names(wrapper)).toEqual(['Lost'])
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(['/api/genres/Drama/shows?page=1'])
+  })
+
   it('says when a page has no shows', async () => {
     fakeApi({ '/api/genres/Drama/shows?page=9': makePage([], { page: 9, total: 30, pageCount: 2 }) })
 
