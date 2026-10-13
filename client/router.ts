@@ -9,6 +9,10 @@ function toPageNumber(value: QueryValue): number {
   return Number.isInteger(page) && page > 0 ? page : 1
 }
 
+function toText(value: QueryValue): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 /** The history is passed in so tests can run the real router in memory. */
 export function createAppRouter(history: RouterHistory) {
   return createRouter({
@@ -26,6 +30,16 @@ export function createAppRouter(history: RouterHistory) {
         name: 'genre',
         component: () => import('@/features/genre/GenreView.vue'),
         props: (route) => ({ genre: String(route.params.genre), page: toPageNumber(route.query.page) }),
+      },
+      {
+        path: '/search',
+        name: 'search',
+        component: () => import('@/features/search/SearchView.vue'),
+        props: (route) => ({
+          query: toText(route.query.q),
+          genre: toText(route.query.genre) || undefined,
+          page: toPageNumber(route.query.page),
+        }),
       },
       { path: '/shows/:id', name: 'show', component: () => import('@/features/show/ShowDetailView.vue') },
     ],

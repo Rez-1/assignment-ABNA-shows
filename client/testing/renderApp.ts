@@ -30,6 +30,13 @@ export function fakeApi(routes: FakeRoutes) {
   return fetch
 }
 
+/** Waits for navigation (including lazily loaded screens) and pending requests to finish. */
+export async function settle() {
+  await flushPromises()
+  await vi.dynamicImportSettled()
+  await flushPromises()
+}
+
 /** Mounts the whole application at `path` and waits for it to settle. */
 export async function renderApp(path = '/') {
   const router = createAppRouter(createMemoryHistory())
@@ -37,6 +44,6 @@ export async function renderApp(path = '/') {
   await router.isReady()
 
   const wrapper = mount(App, { global: { plugins: [createPinia(), router] }, attachTo: document.body })
-  await flushPromises()
+  await settle()
   return { wrapper, router }
 }
