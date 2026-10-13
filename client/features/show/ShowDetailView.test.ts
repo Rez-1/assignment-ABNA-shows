@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { makeEpisode, makePage, makeShowDetails } from '@/testing/fixtures'
+import { makeEpisode, makePage, makeShow, makeShowDetails } from '@/testing/fixtures'
 import { type FakeRoutes, fakeApi, jsonResponse, renderApp, settle } from '@/testing/renderApp'
 
 afterEach(() => {
@@ -190,6 +190,48 @@ describe('show detail page', () => {
 
       expect(wrapper.find('#seasons-heading').exists()).toBe(false)
       expect(wrapper.find('#episodes-heading').exists()).toBe(false)
+    })
+  })
+
+  describe('related shows', () => {
+    const related = (wrapper: App) => wrapper.find('section[aria-labelledby="related-heading"]')
+
+    it('suggests the best of the show’s first genre, leaving out the show itself', async () => {
+      showApi(makeShowDetails({ id: 169, genres: ['Drama', 'Crime'] }), {
+        '/api/genres/Drama/shows?page=1': makePage([
+          makeShow({ id: 169, name: 'Breaking Bad' }),
+          makeShow({ name: 'The Wire' }),
+          makeShow({ name: 'Chernobyl' }),
+        ]),
+      })
+
+      const { wrapper } = await renderApp('/shows/169')
+
+      expect(related(wrapper).get('h2').text()).toBe('More in Drama')
+      expect(related(wrapper).findAll('[data-test="show-name"]').map((name) => name.text())).toEqual(['The Wire', 'Chernobyl'])
+      expect(related(wrapper).get('[data-test="view-all"]').attributes('href')).toBe('/genres/Drama')
+    })
+
+    it('is left out when there is nothing to suggest', async () => {
+      showApi(makeShowDetails({ id: 169, genres: ['Drama'] }), {
+        '/api/genres/Drama/shows?page=1': makePage([makeShow({ id: 169, name: 'Breaking Bad' })]),
+      })
+      expect(related((await renderApp('/shows/169')).wrapper).exists()).toBe(false)
+      document.body.innerHTML = ''
+
+      const fetch = showApi(makeShowDetails({ id: 5, genres: [] }))
+      expect(related((await renderApp('/shows/5')).wrapper).exists()).toBe(false)
+      expect(fetch.mock.calls.filter(([url]) => String(url).includes('/genres/'))).toHaveLength(0)
+    })
+
+    it('is quietly left out when it cannot be loaded, without disturbing the rest of the page', async () => {
+      showApi(makeShowDetails(), { '/api/genres/Drama/shows?page=1': jsonResponse({ message: 'Something went wrong' }, 500) })
+
+      const { wrapper } = await renderApp('/shows/169')
+
+      expect(related(wrapper).exists()).toBe(false)
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(wrapper.get('h1').text()).toBe('Breaking Bad')
     })
   })
 
