@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { makeEpisode, makePage, makeShowDetails } from '@/testing/fixtures'
-import { type FakeRoutes, fakeApi, renderApp, settle } from '@/testing/renderApp'
+import { type FakeRoutes, fakeApi, jsonResponse, renderApp, settle } from '@/testing/renderApp'
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -150,6 +150,37 @@ describe('show detail page', () => {
       expect(seasonButtons(wrapper).map((button) => button.attributes('aria-pressed'))).toEqual(['false', 'true'])
       expect(wrapper.get('#episodes-heading').text()).toBe('Season 2 episodes')
       expect(episodeNames(wrapper)).toEqual(['Seven Thirty-Seven'])
+    })
+
+    it('shows placeholders while episodes load, then explains a failure with a way to retry', async () => {
+      let attempts = 0
+      let respond!: (response: unknown) => void
+      showApi(makeShowDetails({ seasons }), {
+        '/api/seasons/753/episodes': () =>
+          ++attempts === 1 ? new Promise((resolve) => (respond = resolve)) : [makeEpisode({ name: 'Pilot' })],
+      })
+      const { wrapper } = await renderApp('/shows/169')
+      const episodes = wrapper.get('section[aria-labelledby="episodes-heading"]')
+
+      expect(episodes.get('[role="status"]').text()).toBe('Loading episodes')
+      expect(episodes.findAll('[data-test="skeleton-card"]').length).toBeGreaterThan(0)
+      expect(wrapper.get('h1').text()).toBe('Breaking Bad')
+
+      respond(jsonResponse({ message: 'Too many requests. Try again in a moment.' }, 429))
+      await settle()
+      expect(episodes.get('[role="alert"]').text()).toContain('Too many requests. Try again in a moment.')
+
+      await episodes.get('[role="alert"] button').trigger('click')
+      await settle()
+      expect(episodeNames(wrapper)).toEqual(['Pilot'])
+    })
+
+    it('says when a season has no episodes listed', async () => {
+      showApi(makeShowDetails({ seasons }), { '/api/seasons/753/episodes': [] })
+
+      const { wrapper } = await renderApp('/shows/169')
+
+      expect(wrapper.get('section[aria-labelledby="episodes-heading"]').text()).toContain('No episodes are listed for this season')
     })
 
     it('leaves out both sections when a show has no seasons', async () => {
