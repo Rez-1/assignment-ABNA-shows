@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeGenreRow, makePage, makeShow } from '@/testing/fixtures'
-import { fakeApi, renderApp, settle } from '@/testing/renderApp'
+import { fakeApi, jsonResponse, renderApp, settle } from '@/testing/renderApp'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -77,6 +77,66 @@ describe('searching by name', () => {
     expect(router.currentRoute.value.fullPath).toBe('/search?q=lost&genre=Fantasy')
     expect(wrapper.get('h1').text()).toBe('1 result for “lost” in Fantasy')
     expect(names(wrapper)).toEqual(['Lost Girl'])
+  })
+
+  it('asks for a name when the search is empty, without asking the server', async () => {
+    const fetch = fakeApi({ '/api/genres?limit=20': [] })
+
+    const { wrapper } = await renderApp('/search')
+
+    expect(wrapper.get('h1').text()).toBe('Search shows')
+    expect(wrapper.text()).toContain('Type a show’s name in the search box above')
+    expect(fetch.mock.calls.filter(([url]) => String(url).includes('/shows/search'))).toHaveLength(0)
+  })
+
+  it('says when nothing matches, and offers to search all genres if one was chosen', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [makeGenreRow('Western', [])],
+      '/api/shows/search?q=zzzz&genre=Western&page=1': makePage([]),
+    })
+
+    const { wrapper } = await renderApp('/search?q=zzzz&genre=Western')
+
+    expect(wrapper.get('h1').text()).toBe('0 results for “zzzz” in Western')
+    expect(wrapper.text()).toContain('No shows match “zzzz” in Western')
+    expect(wrapper.get('[data-test="all-genres"]').attributes('href')).toBe('/search?q=zzzz')
+  })
+
+  it('pages through the results', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [],
+      '/api/shows/search?q=star&genre=Drama&page=2': makePage([makeShow({ name: 'Star Trek' })], { page: 2, total: 70, pageCount: 3 }),
+    })
+
+    const { wrapper } = await renderApp('/search?q=star&genre=Drama&page=2')
+    const pages = wrapper.get('nav[aria-label="Pages"]')
+
+    expect(pages.text()).toContain('Page 2 of 3')
+    expect(pages.get('a[rel="prev"]').attributes('href')).toBe('/search?q=star&genre=Drama')
+    expect(pages.get('a[rel="next"]').attributes('href')).toBe('/search?q=star&genre=Drama&page=3')
+  })
+
+  it('shows placeholders while searching, and explains a failure with a way to retry', async () => {
+    let attempts = 0
+    let respond!: (response: unknown) => void
+    fakeApi({
+      '/api/genres?limit=20': [],
+      '/api/shows/search?q=lost&page=1': () =>
+        ++attempts === 1 ? new Promise((resolve) => (respond = resolve)) : makePage([makeShow({ name: 'Lost' })]),
+    })
+
+    const { wrapper } = await renderApp('/search?q=lost')
+    expect(wrapper.get('h1').text()).toBe('Searching for “lost”')
+    expect(wrapper.get('[role="status"]').text()).toBe('Searching')
+    expect(wrapper.findAll('[data-test="skeleton-card"]').length).toBeGreaterThan(0)
+
+    respond(jsonResponse({ message: 'q must be at most 100 characters' }, 400))
+    await settle()
+    expect(wrapper.get('[role="alert"]').text()).toContain('q must be at most 100 characters')
+
+    await wrapper.get('[role="alert"] button').trigger('click')
+    await settle()
+    expect(names(wrapper)).toEqual(['Lost'])
   })
 
   it('keeps the chosen genre when the search text changes, and can clear it again', async () => {

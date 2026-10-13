@@ -3,7 +3,10 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGenresStore } from '@/features/dashboard/genresStore'
 import GenreSelect from '@/shared/components/GenreSelect.vue'
+import PageLinks from '@/shared/components/PageLinks.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
+import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
+import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
 import { formatCount } from '@/shared/utils/format'
 import { searchShows } from './api'
@@ -14,9 +17,15 @@ const router = useRouter()
 const genres = useGenresStore()
 onMounted(genres.ensureLoaded)
 
-const { data: result } = useAsyncResource(
+const {
+  data: result,
+  error,
+  status,
+  reload,
+} = useAsyncResource(
   () => ({ query: props.query, genre: props.genre, page: props.page }),
-  searchShows,
+  // Nothing to look for yet: skip the request rather than ask the server for an empty search.
+  (request, signal) => (request.query ? searchShows(request, signal) : Promise.resolve(null)),
 )
 
 // The URL holds the search; picking a genre rewrites it and starts again from page one.
@@ -25,9 +34,11 @@ const selectedGenre = computed({
   set: (genre) => router.push({ name: 'search', query: { q: props.query, genre: genre || undefined } }),
 })
 
+const scope = computed(() => `“${props.query}”${props.genre ? ` in ${props.genre}` : ''}`)
+
 const heading = computed(() => {
-  const scope = `for “${props.query}”${props.genre ? ` in ${props.genre}` : ''}`
-  return result.value ? `${formatCount(result.value.total, 'result')} ${scope}` : `Searching ${scope}`
+  if (!props.query) return 'Search shows'
+  return result.value ? `${formatCount(result.value.total, 'result')} for ${scope.value}` : `Searching for ${scope.value}`
 })
 </script>
 
@@ -35,9 +46,39 @@ const heading = computed(() => {
   <div class="page search-page">
     <header class="search-page__header">
       <h1 class="page-title search-page__title">{{ heading }}</h1>
-      <GenreSelect v-model="selectedGenre" :genres="genres.genreNames" />
+      <GenreSelect v-if="query" v-model="selectedGenre" :genres="genres.genreNames" />
     </header>
-    <ShowGrid v-if="result" :shows="result.items" />
+
+    <StatusMessage
+      v-if="!query"
+      title="What are you looking for?"
+      message="Type a show’s name in the search box above."
+    />
+
+    <ShowGridSkeleton v-else-if="status === 'loading'" label="Searching" />
+
+    <StatusMessage
+      v-else-if="error"
+      variant="error"
+      title="The search could not be completed"
+      :message="error.message"
+      retryable
+      @retry="reload"
+    />
+
+    <template v-else-if="result">
+      <StatusMessage
+        v-if="result.total === 0"
+        :title="`No shows match ${scope}`"
+        message="Check the spelling or try a shorter part of the name."
+      >
+        <RouterLink v-if="genre" :to="{ name: 'search', query: { q: query } }" data-test="all-genres">
+          Search all genres
+        </RouterLink>
+      </StatusMessage>
+      <ShowGrid v-else :shows="result.items" />
+      <PageLinks :page="result.page" :page-count="result.pageCount" />
+    </template>
   </div>
 </template>
 
