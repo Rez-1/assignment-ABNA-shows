@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { makePage, makeShow } from '@/testing/fixtures'
+import { makeGenreRow, makePage, makeShow } from '@/testing/fixtures'
 import { fakeApi, renderApp, settle } from '@/testing/renderApp'
 
 afterEach(() => {
@@ -58,5 +58,47 @@ describe('searching by name', () => {
     expect((searchBox(wrapper).element as HTMLInputElement).value).toBe('lost')
     expect(wrapper.get('h1').text()).toBe('276 results for “lost”')
     expect(names(wrapper)).toEqual(['Lost'])
+  })
+
+  it('narrows the results to a genre, starting again from the first page', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [makeGenreRow('Drama', []), makeGenreRow('Fantasy', [])],
+      '/api/shows/search?q=lost&page=3': makePage([makeShow({ name: 'Lost in Space' })], { page: 3, total: 60, pageCount: 3 }),
+      '/api/shows/search?q=lost&genre=Fantasy&page=1': makePage([makeShow({ name: 'Lost Girl' })]),
+    })
+    const { wrapper, router } = await renderApp('/search?q=lost&page=3')
+    const genreSelect = wrapper.get('select[aria-label="Genre"]')
+
+    expect(genreSelect.findAll('option').map((option) => option.text())).toEqual(['All genres', 'Drama', 'Fantasy'])
+
+    await genreSelect.setValue('Fantasy')
+    await settle()
+
+    expect(router.currentRoute.value.fullPath).toBe('/search?q=lost&genre=Fantasy')
+    expect(wrapper.get('h1').text()).toBe('1 result for “lost” in Fantasy')
+    expect(names(wrapper)).toEqual(['Lost Girl'])
+  })
+
+  it('keeps the chosen genre when the search text changes, and can clear it again', async () => {
+    fakeApi({
+      '/api/genres?limit=20': [makeGenreRow('Fantasy', [])],
+      '/api/shows/search?q=lost&genre=Fantasy&page=1': makePage([makeShow({ name: 'Lost Girl' })]),
+      '/api/shows/search?q=girl&genre=Fantasy&page=1': makePage([makeShow({ name: 'Supergirl' })]),
+      '/api/shows/search?q=girl&page=1': makePage([makeShow({ name: 'Gossip Girl' })]),
+    })
+    const { wrapper, router } = await renderApp('/search?q=lost&genre=Fantasy')
+    const genreSelect = wrapper.get('select[aria-label="Genre"]')
+    expect((genreSelect.element as HTMLSelectElement).value).toBe('Fantasy')
+
+    await searchBox(wrapper).setValue('girl')
+    await wrapper.get('header form[role="search"]').trigger('submit')
+    await settle()
+    expect(router.currentRoute.value.fullPath).toBe('/search?q=girl&genre=Fantasy')
+    expect(names(wrapper)).toEqual(['Supergirl'])
+
+    await genreSelect.setValue('')
+    await settle()
+    expect(router.currentRoute.value.fullPath).toBe('/search?q=girl')
+    expect(names(wrapper)).toEqual(['Gossip Girl'])
   })
 })
