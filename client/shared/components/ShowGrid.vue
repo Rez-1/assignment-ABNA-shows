@@ -7,7 +7,7 @@ defineProps<{ shows: readonly ShowSummary[] }>()
 </script>
 
 <template>
-  <ul class="grid">
+  <ul class="grid" role="list">
     <li v-for="show in shows" :key="show.id">
       <ShowCard :show="show" />
     </li>

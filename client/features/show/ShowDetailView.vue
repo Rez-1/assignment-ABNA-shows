@@ -42,8 +42,12 @@ usePageTitle(() => show.value?.name ?? (isMissing.value ? 'Show not found' : nul
   </div>
 
   <div v-else-if="isMissing" class="page">
-    <StatusMessage title="We could not find that show" message="It may have been removed, or the link is incorrect.">
-      <RouterLink :to="{ name: 'dashboard' }" data-test="back-to-genres">Browse all genres</RouterLink>
+    <StatusMessage
+      title="We could not find that show"
+      message="It may have been removed, or the link is incorrect."
+      :heading-level="1"
+    >
+      <RouterLink :to="{ name: 'dashboard' }" class="text-link" data-test="back-to-genres">Browse all genres</RouterLink>
     </StatusMessage>
   </div>
 
@@ -51,6 +55,7 @@ usePageTitle(() => show.value?.name ?? (isMissing.value ? 'Show not found' : nul
     <StatusMessage
       variant="error"
       title="This show could not be loaded"
+      :heading-level="1"
       :message="error.message"
       retryable
       @retry="reload"

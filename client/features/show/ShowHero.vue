@@ -33,18 +33,20 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
 </script>
 
 <template>
-  <section class="hero">
+  <section class="hero" :class="{ 'hero--poster': artwork?.source === 'poster' }">
     <template v-if="artwork">
-      <img
-        :src="artwork.src"
-        alt=""
-        class="hero__backdrop"
-        :class="{ 'hero__backdrop--blurred': artwork.source === 'poster' }"
-        :data-source="artwork.source"
-        referrerpolicy="no-referrer"
-        data-test="backdrop"
-      />
-      <div class="hero__shade" />
+      <div class="hero__art">
+        <img
+          :src="artwork.src"
+          alt=""
+          class="hero__backdrop"
+          :class="{ 'hero__backdrop--blurred': artwork.source === 'poster' }"
+          :data-source="artwork.source"
+          referrerpolicy="no-referrer"
+          data-test="backdrop"
+        />
+        <div class="hero__shade" />
+      </div>
     </template>
 
     <div class="hero__inner">
@@ -59,7 +61,7 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
       <div class="hero__content">
         <h1 class="page-title">{{ show.name }}</h1>
 
-        <ul class="hero__facts" data-test="show-facts">
+        <ul class="hero__facts" role="list" data-test="show-facts">
           <li><RatingBadge :rating="show.rating" class="hero__rating" /></li>
           <li v-for="fact in facts" :key="fact">{{ fact }}</li>
         </ul>
@@ -78,7 +80,7 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
             rel="noopener noreferrer"
             data-test="official-site"
           >
-            Official site <AppIcon name="external" />
+            Official site <span class="visually-hidden">(opens in a new tab)</span><AppIcon name="external" />
           </a>
           <p v-if="airing" class="hero__airing" data-test="show-airing">{{ airing }}</p>
         </div>
@@ -94,10 +96,14 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
   isolation: isolate;
 }
 
-.hero__backdrop {
+.hero__art {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.hero__backdrop {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -109,14 +115,28 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
   transform: scale(1.3);
 }
 
-/* Darkens the artwork where the text sits and fades it into the page below. */
+/*
+ * Keeps text readable whatever the artwork looks like: a solid scrim covers the
+ * width the text can occupy and only then fades out. That width is set in rem
+ * (gutter + text column, plus the poster when it is shown), so it also holds on
+ * narrow windows. tokens.test.ts checks the scrim against pure white artwork.
+ */
+.hero {
+  /* On very wide screens the content is centred, so the text starts further in. */
+  --hero-inset: max(0px, (100vw - var(--page-max-width)) / 2);
+  --hero-text-edge: calc(var(--hero-inset) + 46rem);
+}
+
+.hero--poster {
+  --hero-text-edge: calc(var(--hero-inset) + 62rem);
+}
+
 .hero__shade {
   position: absolute;
   inset: 0;
-  z-index: -1;
   background:
     linear-gradient(to top, var(--color-page), transparent 45%),
-    linear-gradient(to right, var(--color-page) 5%, var(--color-scrim) 45%, transparent 90%);
+    linear-gradient(to right, var(--color-scrim) var(--hero-text-edge), transparent calc(var(--hero-text-edge) + 28rem));
 }
 
 .hero__inner {
@@ -136,7 +156,8 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
 .hero__content {
   display: grid;
   gap: var(--space-4);
-  max-width: var(--prose-width);
+  /* In rem rather than ch so the scrim width above can be matched to it. */
+  max-width: 40rem;
 }
 
 .hero__facts {
@@ -186,9 +207,14 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
 }
 
 @media (max-width: 40rem) {
-  /* On phones the artwork sits on top and the text stacks beneath it. */
+  /* On phones the artwork is a banner on top and the text sits beneath it on the plain page. */
+  .hero__art {
+    position: relative;
+    aspect-ratio: 16 / 9;
+  }
+
   .hero__shade {
-    background: linear-gradient(to top, var(--color-page) 35%, var(--color-scrim) 60%, transparent);
+    background: linear-gradient(to top, var(--color-page), transparent 40%);
   }
 
   .hero__inner {
@@ -196,7 +222,7 @@ const airing = computed(() => [props.show.network, props.show.schedule].filter(B
     align-items: flex-start;
     gap: var(--space-4);
     min-height: 0;
-    padding-top: 38vw;
+    padding-top: var(--space-4);
   }
 
   .hero__poster {

@@ -59,6 +59,12 @@ a:hover {
   color: var(--color-accent-hover);
 }
 
+/* Links inside running text must not rely on colour alone to be recognised. */
+.text-link {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 button,
 input,
 select {

@@ -11,8 +11,10 @@ withDefaults(
     retryable?: boolean
     /** Less padding, for use inside a section rather than as a whole page. */
     compact?: boolean
+    /** Use 1 when this message is all the page shows, so the page still has a main heading. */
+    headingLevel?: 1 | 2
   }>(),
-  { message: undefined, variant: 'empty', retryable: false, compact: false },
+  { message: undefined, variant: 'empty', retryable: false, compact: false, headingLevel: 2 },
 )
 
 defineEmits<{ retry: [] }>()
@@ -20,7 +22,7 @@ defineEmits<{ retry: [] }>()
 
 <template>
   <div class="status" :class="{ 'status--compact': compact }" :role="variant === 'error' ? 'alert' : undefined">
-    <h2 class="section-title">{{ title }}</h2>
+    <component :is="`h${headingLevel}`" class="section-title">{{ title }}</component>
     <p v-if="message" class="muted">{{ message }}</p>
     <button v-if="retryable" type="button" class="status__retry" @click="$emit('retry')">Try again</button>
     <slot />

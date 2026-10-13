@@ -1,17 +1,33 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/app/AppHeader.vue'
+import { currentPageName } from '@/shared/composables/usePageTitle'
+
+const main = useTemplateRef('main')
+
+// A full page load moves focus and announces the page; a client-side navigation
+// does neither. So when the page changes, move focus into the new content (the
+// live region below announces its name). Changes within a page, such as typing
+// a search or paging, leave focus where the user put it.
+useRouter().afterEach((to, from) => {
+  const isFirstLoad = from.matched.length === 0
+  if (!isFirstLoad && to.path !== from.path) main.value?.focus({ preventScroll: true })
+})
 </script>
 
 <template>
   <a href="#main" class="skip-link">Skip to content</a>
   <AppHeader />
-  <main id="main" tabindex="-1">
+  <p class="visually-hidden" aria-live="polite" aria-atomic="true" data-test="route-announcer">{{ currentPageName }}</p>
+  <main id="main" ref="main" tabindex="-1">
     <RouterView />
   </main>
   <footer class="footer">
     <!-- TVMaze licenses its data under CC BY-SA, which asks for this credit. -->
     Show data provided by
-    <a href="https://www.tvmaze.com" target="_blank" rel="noopener noreferrer">TVMaze</a>
+    <!-- Kept on one line: line breaks inside the link would add stray spaces to its text. -->
+    <a href="https://www.tvmaze.com" class="text-link" target="_blank" rel="noopener noreferrer">TVMaze <span class="visually-hidden">(opens in a new tab)</span></a>
   </footer>
 </template>
 
@@ -38,6 +54,7 @@ main {
   min-height: calc(100vh - var(--header-height) - 4rem);
 }
 
+/* Focus lands here after navigation; it is not a control, so it needs no ring. */
 main:focus {
   outline: none;
 }

@@ -8,7 +8,7 @@ usePageTitle(() => 'Page not found')
   <div class="page not-found">
     <h1 class="page-title">Page not found</h1>
     <p class="muted">There is nothing at this address.</p>
-    <RouterLink :to="{ name: 'dashboard' }">Browse all genres</RouterLink>
+    <RouterLink :to="{ name: 'dashboard' }" class="text-link">Browse all genres</RouterLink>
   </div>
 </template>
 

@@ -25,6 +25,28 @@ function contrast(foreground: string, background: string): number {
   return (light! + 0.05) / (dark! + 0.05)
 }
 
+/** The colour that results from laying the translucent scrim over a pure white image. */
+function scrimOverWhite(): string {
+  const [, r, g, b, alpha] = /rgb\((\d+) (\d+) (\d+) \/ (\d+)%\)/.exec(token('--color-scrim'))!
+  const blend = (channel: string) => Math.round(Number(channel) * (Number(alpha) / 100) + 255 * (1 - Number(alpha) / 100))
+  return '#' + [r, g, b].map((channel) => blend(channel!).toString(16).padStart(2, '0')).join('')
+}
+
+function contrastWithHex(foreground: string, backgroundHex: string): number {
+  const [light, dark] = [luminance(token(foreground)), luminance(backgroundHex)].sort((a, b) => b - a)
+  return (light! + 0.05) / (dark! + 0.05)
+}
+
+describe('text over artwork', () => {
+  // Text on the detail header and on episode stills sits on a scrim over an image we do not control.
+  it.each(['--color-text', '--color-text-muted', '--color-accent'])(
+    '%s stays readable on the scrim even over pure white artwork',
+    (foreground) => {
+      expect(contrastWithHex(foreground, scrimOverWhite())).toBeGreaterThanOrEqual(4.5)
+    },
+  )
+})
+
 describe('colour tokens meet WCAG AA', () => {
   it.each([
     ['--color-text', '--color-page'],

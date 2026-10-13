@@ -52,13 +52,18 @@ const heading = computed(() => {
       <GenreSelect v-if="query" v-model="selectedGenre" :genres="genres.genreNames" />
     </header>
 
+    <!-- Always present, so screen readers announce each change as results come in while typing. -->
+    <p v-if="query" role="status" class="visually-hidden" data-test="search-status">
+      {{ status === 'loading' ? 'Searching' : heading }}
+    </p>
+
     <StatusMessage
       v-if="!query"
       title="What are you looking for?"
       message="Type a show’s name in the search box above."
     />
 
-    <ShowGridSkeleton v-else-if="status === 'loading'" label="Searching" />
+    <ShowGridSkeleton v-else-if="status === 'loading'" />
 
     <StatusMessage
       v-else-if="error"
@@ -75,7 +80,7 @@ const heading = computed(() => {
         :title="`No shows match ${scope}`"
         message="Check the spelling or try a shorter part of the name."
       >
-        <RouterLink v-if="genre" :to="{ name: 'search', query: { q: query } }" data-test="all-genres">
+        <RouterLink v-if="genre" :to="{ name: 'search', query: { q: query } }" class="text-link" data-test="all-genres">
           Search all genres
         </RouterLink>
       </StatusMessage>

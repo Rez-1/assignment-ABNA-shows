@@ -83,8 +83,21 @@ API: `GET /api/genres`, `/api/genres/:genre/shows`, `/api/shows/search`, `/api/s
 - Neutral dark greys with a single yellow accent used for links, focus, active controls and ratings. The detail page layout (backdrop header, rows of seasons, episodes and cast) takes its cues from Plex's web interface.
 - **Design tokens in two layers** (`client/styles/tokens.css`): raw values, and semantic tokens such as `--color-surface` or `--radius-card`. Components only use the semantic layer. A test checks the text and background pairs against WCAG AA contrast.
 - Responsive without fixed breakpoints where possible: fluid type, card widths and gutters. Rows scroll by swipe, trackpad or keyboard, with paging buttons for mouse users.
-- Accessibility: semantic landmarks and headings, a skip link, labelled lists and controls, visible focus, announced loading and error states, and no motion for people who prefer reduced motion.
 - Many shows have no backdrop artwork. The header then uses the poster, blurred, with the sharp poster beside the title.
+
+## Accessibility
+
+The target is WCAG 2.2 AA.
+
+- **Structure:** landmarks, exactly one main heading on every screen (including error and not-found states), labelled sections and lists, and explicit list roles so Safari keeps list semantics on unstyled lists.
+- **Keyboard:** a skip link, visible focus on every control, and every scrolling row reachable by keyboard: rows of links through their links, rows of plain content (cast, episodes) through a tab stop of their own.
+- **Navigation without page loads:** after moving to another page, focus moves into the new content and a live region announces the page's name. Typing a search or paging leaves focus where it is.
+- **Announcements:** loading and error states are announced, and the search page announces the number of results as you type.
+- **Text alternatives:** ratings are read as "Rated 9.2 out of 10", episode badges as "Episode 1", decorative artwork is hidden from screen readers, and links that open a new tab say so.
+- **Colour:** text and background pairs meet AA contrast, including text over artwork, which sits on a scrim that is tested against pure white images. Links in running text are underlined, so they do not rely on colour.
+- **Layout and motion:** no horizontal scrolling down to 320px wide, zoom is not blocked, and animation is switched off for people who prefer reduced motion.
+
+How it was checked: the [axe](https://github.com/dequelabs/axe-core) checker runs against every screen in the test suite, and was also run in a real browser (where it can judge layout and colour) with no violations on any screen. It has not been tested with a screen reader by hand, which automated checks do not replace.
 
 ## Security
 
@@ -113,9 +126,10 @@ Tests sit at a small number of agreed boundaries and describe behaviour rather t
 | Screens | The whole Vue app is mounted with the real router and stores; only `fetch` is faked |
 | Interactive components | `HorizontalScroller`, and search and paging through the screens |
 | `useAsyncResource` | Loading, errors, reload and "the newest request wins" |
-| Design tokens | WCAG AA contrast of the colour pairs |
+| Design tokens | WCAG AA contrast of the colour pairs, including text over artwork |
+| Accessibility | axe on every screen, plus focus, announcements and text alternatives |
 
-The client was written test-first, one behaviour at a time. The server's tests were written after its code; to make up for that, each behaviour on both sides was then broken deliberately once to confirm that a test fails (98 breakages, all caught after closing three gaps this found). Line coverage is 99%.
+The client was written test-first, one behaviour at a time. The server's tests were written after its code; to make up for that, each behaviour on both sides was then broken deliberately once to confirm that a test fails (115 breakages, all caught after closing four gaps this found). Line coverage is 99%.
 
 CI (`.github/workflows/ci.yml`) audits dependencies, lints, type-checks, tests and builds.
 

@@ -6,7 +6,7 @@ defineProps<{ genres: string[] }>()
 
 <template>
   <nav class="quick-links" aria-label="Jump to a genre">
-    <ul class="quick-links__list">
+    <ul class="quick-links__list" role="list">
       <li v-for="genre in genres" :key="genre">
         <RouterLink :to="{ hash: `#${genreAnchor(genre)}` }" class="quick-links__link">{{ genre }}</RouterLink>
       </li>

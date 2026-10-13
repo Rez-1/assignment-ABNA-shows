@@ -37,7 +37,7 @@ const isUnknownGenre = computed(() => error.value instanceof ApiError && error.v
     <ShowGridSkeleton v-if="status === 'loading'" :label="`Loading ${genre} shows`" />
 
     <StatusMessage v-else-if="isUnknownGenre" :title="`There is no genre called “${genre}”`">
-      <RouterLink :to="{ name: 'dashboard' }" data-test="back-to-genres">Browse all genres</RouterLink>
+      <RouterLink :to="{ name: 'dashboard' }" class="text-link" data-test="back-to-genres">Browse all genres</RouterLink>
     </StatusMessage>
 
     <StatusMessage
@@ -51,7 +51,7 @@ const isUnknownGenre = computed(() => error.value instanceof ApiError && error.v
 
     <template v-else-if="result">
       <StatusMessage v-if="result.items.length === 0" title="There are no shows on this page">
-        <RouterLink :to="{ query: {} }" data-test="first-page">Go to the first page</RouterLink>
+        <RouterLink :to="{ query: {} }" class="text-link" data-test="first-page">Go to the first page</RouterLink>
       </StatusMessage>
       <ShowGrid v-else :shows="result.items" />
       <PageLinks :page="result.page" :page-count="result.pageCount" />

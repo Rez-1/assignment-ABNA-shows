@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import SkeletonCard from './SkeletonCard.vue'
 
-/** Stand-in for a ShowGrid while its shows load; `label` is announced to screen readers. */
-withDefaults(defineProps<{ label: string; count?: number }>(), { count: 12 })
+/**
+ * Stand-in for a ShowGrid while its shows load. `label` is announced to screen
+ * readers; leave it out when the page announces loading itself.
+ */
+withDefaults(defineProps<{ label?: string; count?: number }>(), { label: undefined, count: 12 })
 </script>
 
 <template>
   <div>
-    <p role="status" class="visually-hidden">{{ label }}</p>
+    <p v-if="label" role="status" class="visually-hidden">{{ label }}</p>
     <div class="grid-skeleton">
       <SkeletonCard v-for="card in count" :key="card" />
     </div>

@@ -41,7 +41,10 @@ const { data: episodes, error, status, reload } = useAsyncResource(() => props.s
       <li v-for="episode in episodes" :key="episode.id" class="episode" data-test="episode">
         <div class="episode__still">
           <ArtworkImage :src="episode.image" shape="still" />
-          <span v-if="episode.number !== null" class="episode__number">E{{ episode.number }}</span>
+          <span v-if="episode.number !== null" class="episode__number" data-test="episode-number">
+            <span class="visually-hidden">Episode {{ episode.number }}:</span>
+            <span aria-hidden="true">E{{ episode.number }}</span>
+          </span>
         </div>
         <p class="episode__name" data-test="episode-name">{{ episode.name }}</p>
         <p v-if="formatDate(episode.airdate)" class="episode__date muted">{{ formatDate(episode.airdate) }}</p>

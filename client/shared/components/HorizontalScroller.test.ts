@@ -64,6 +64,24 @@ describe('HorizontalScroller', () => {
     expect(disabled()).toEqual([false, true])
   })
 
+  it('can be scrolled with the keyboard when its items cannot take focus themselves', async () => {
+    const { track } = await mountScroller()
+
+    expect(track.attributes('tabindex')).toBe('0')
+  })
+
+  it('adds no extra tab stop when its items are links or buttons', async () => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000)
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(3000)
+    const wrapper = mount(HorizontalScroller, {
+      props: { label: 'Drama shows' },
+      slots: { default: '<li><a href="/shows/1">One</a></li><li><a href="/shows/2">Two</a></li>' },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('ul').attributes('tabindex')).toBeUndefined()
+  })
+
   it('disables both buttons when everything fits', async () => {
     const { forward, back } = await mountScroller({ visible: 1000, content: 1000 })
 

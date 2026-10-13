@@ -12,6 +12,9 @@ defineProps<{ label: string }>()
 const track = useTemplateRef('track')
 const canGoBack = ref(false)
 const canGoForward = ref(false)
+// A scrolling area must be reachable by keyboard. Rows of links already are; rows of
+// plain content (cast, episodes) get a tab stop of their own so arrow keys can scroll them.
+const needsTabStop = ref(false)
 
 function measure() {
   const element = track.value
@@ -19,6 +22,7 @@ function measure() {
   // One pixel of slack absorbs sub-pixel rounding at either end.
   canGoBack.value = element.scrollLeft > 1
   canGoForward.value = element.scrollLeft + element.clientWidth < element.scrollWidth - 1
+  needsTabStop.value = element.querySelector('a[href], button, input, select, textarea, [tabindex]') === null
 }
 
 // Re-measure when the box resizes and when the items in the slot change.
@@ -45,7 +49,14 @@ function page(direction: 1 | -1) {
     <button type="button" class="scroller__button scroller__button--back" :aria-label="`Scroll ${label} back`" :disabled="!canGoBack" @click="page(-1)">
       <AppIcon name="chevron-left" />
     </button>
-    <ul ref="track" class="scroller__track" :aria-label="label" @scroll.passive="measure">
+    <ul
+      ref="track"
+      class="scroller__track"
+      role="list"
+      :aria-label="label"
+      :tabindex="needsTabStop ? 0 : undefined"
+      @scroll.passive="measure"
+    >
       <slot />
     </ul>
     <button type="button" class="scroller__button scroller__button--forward" :aria-label="`Scroll ${label} forward`" :disabled="!canGoForward" @click="page(1)">
@@ -71,6 +82,10 @@ function page(direction: 1 | -1) {
   scroll-padding-inline: var(--page-gutter);
   scroll-behavior: smooth;
   scrollbar-width: none;
+}
+
+.scroller__track:focus-visible {
+  outline-offset: -2px;
 }
 
 .scroller__track::-webkit-scrollbar {

@@ -11,6 +11,7 @@ const value = computed(() => props.rating?.toFixed(1) ?? null)
   <span
     class="rating"
     :class="{ 'rating--none': value === null }"
+    :role="value === null ? undefined : 'img'"
     :aria-label="value === null ? undefined : `Rated ${value} out of 10`"
     data-test="rating"
   >
