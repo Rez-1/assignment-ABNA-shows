@@ -1,6 +1,7 @@
 import express, { type Express } from 'express'
 import type { Catalogue } from './catalogue/catalogue.ts'
 import { createCachedLoader } from './http/cache.ts'
+import { servePages } from './http/pages.ts'
 import { errorHandler, notFound, proxyRateLimit, type RateLimitOptions, readOnly, securityHeaders } from './http/security.ts'
 import { parseId, parsePaging, parseRowLimit, parseText } from './http/validation.ts'
 import type { TvMazeClient } from './tvmaze/client.ts'
@@ -9,6 +10,8 @@ export interface AppOptions {
   catalogue: Catalogue
   tvmaze: Pick<TvMazeClient, 'fetchShowDetails' | 'fetchSeasonEpisodes'>
   production?: boolean
+  /** Folder holding the built client. When given, the app serves its pages as well as the API. */
+  clientDir?: string
   /** Limit for the routes that call TVMaze, per client. */
   rateLimit?: RateLimitOptions
   /** How long, and how many, TVMaze answers are kept. */
@@ -18,15 +21,17 @@ export interface AppOptions {
 const HOUR = 60 * 60 * 1000
 
 /**
- * Builds the Express app with the JSON API mounted under /api. It has no side
- * effects (no listening, no file access), which keeps it easy to test; serving
- * the client is added by the entry point.
+ * Builds the Express app with the JSON API mounted under /api and, when
+ * `clientDir` is given, the built client's pages. It does not listen, and the
+ * only files it reads are in that folder, which keeps it easy to test. In
+ * development the entry point adds the Vite dev server instead.
  */
 export function createApp(options: AppOptions): Express {
   const {
     catalogue,
     tvmaze,
     production = false,
+    clientDir,
     rateLimit = { windowMs: 60_000, limit: 60 },
     cache = { ttlMs: HOUR, maxEntries: 500 },
   } = options
@@ -78,5 +83,10 @@ export function createApp(options: AppOptions): Express {
   api.use(errorHandler)
 
   app.use('/api', api)
+
+  if (clientDir) {
+    app.use(servePages(clientDir))
+    app.use(errorHandler)
+  }
   return app
 }

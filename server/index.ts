@@ -1,7 +1,6 @@
 import { createServer } from 'node:http'
-import { extname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import express from 'express'
 import { createApp } from './app.ts'
 import { createCatalogue } from './catalogue/catalogue.ts'
 import { readSnapshot } from './catalogue/snapshot.ts'
@@ -22,20 +21,12 @@ const app = createApp({
   // A visitor is waiting on these calls, so retry a rate-limited request once and quickly.
   tvmaze: createTvMazeClient({ maxRetries: 1, retryDelayMs: 500 }),
   production,
+  clientDir: production ? join(root, 'dist') : undefined,
 })
 const server = createServer(app)
 
-if (production) {
-  const dist = join(root, 'dist')
-  // Built assets have content hashes in their names, so they can be cached forever.
-  app.use('/assets', express.static(join(dist, 'assets'), { immutable: true, maxAge: '1y' }))
-  app.use(express.static(dist))
-  // Client-side routes: any other page request gets the app shell.
-  app.use((req, res, next) => {
-    if (req.method !== 'GET' || extname(req.path) !== '') return next()
-    res.sendFile(join(dist, 'index.html'))
-  })
-} else {
+// In development Vite serves the client, with hot reload over this same server.
+if (!production) {
   const { createServer: createViteServer } = await import('vite')
   const vite = await createViteServer({
     root,
@@ -43,8 +34,8 @@ if (production) {
     server: { middlewareMode: true, hmr: { server } },
   })
   app.use(vite.middlewares)
+  app.use(errorHandler)
 }
-app.use(errorHandler)
 
 server.listen(port, host, () => {
   const mode = production ? 'production' : 'development'

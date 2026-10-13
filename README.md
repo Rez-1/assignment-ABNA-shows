@@ -53,7 +53,7 @@ shared/types.ts     The contract between server and client
 server/             Express API (TypeScript, run directly by Node)
   catalogue/        In-memory index: ranking, genre rows, search, snapshot file, crawler
   tvmaze/           The only code that talks to TVMaze and reads its payloads
-  http/             Request validation, caching, security headers, error handling
+  http/             Request validation, caching, security headers, error handling, serving the built client
   data/seed.json.gz The bundled catalogue
 client/             Vue app
   app/              Header, not-found page

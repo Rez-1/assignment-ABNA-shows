@@ -1,5 +1,8 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Episode, ShowDetails } from '../shared/types.ts'
 import { type AppOptions, createApp } from './app.ts'
@@ -319,5 +322,88 @@ describe('hardening', () => {
 
     expect(csp).toContain("style-src 'self' 'unsafe-inline'")
     expect(csp).toContain("script-src 'self'")
+  })
+})
+
+describe('serving the client', () => {
+  const shell = '<!doctype html><title>Showtime</title>'
+  const page = { headers: { accept: 'text/html,application/xhtml+xml,*/*;q=0.8' } }
+  let clientDir: string
+
+  beforeEach(async () => {
+    clientDir = await mkdtemp(join(tmpdir(), 'client-'))
+    await mkdir(join(clientDir, 'assets'))
+    await writeFile(join(clientDir, 'index.html'), shell)
+    await writeFile(join(clientDir, 'favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>')
+    await writeFile(join(clientDir, 'assets', 'index-abc123.js'), 'console.log("app")')
+  })
+
+  afterEach(async () => {
+    await rm(clientDir, { recursive: true, force: true })
+  })
+
+  it.each(['/', '/genres/Drama', '/search?q=lost', '/shows/169', '/shows/1.5', '/genres/Sci.Fi', '/nowhere'])(
+    'answers a page request for %s with the app shell, so the client can route it',
+    async (path) => {
+      const { request } = await start({ clientDir })
+
+      const response = await request(path, page)
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toContain('text/html')
+      expect(await response.text()).toBe(shell)
+    },
+  )
+
+  it('serves built assets as cacheable forever, and the shell as always revalidated', async () => {
+    const { request } = await start({ clientDir })
+
+    const asset = await request('/assets/index-abc123.js')
+    expect(await asset.text()).toBe('console.log("app")')
+    expect(asset.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+
+    expect((await request('/', page)).headers.get('cache-control')).toBe('public, max-age=0')
+    expect((await request('/shows/169', page)).headers.get('cache-control')).toBe('public, max-age=0')
+  })
+
+  it('serves other files from the client folder', async () => {
+    const { request } = await start({ clientDir })
+
+    const response = await request('/favicon.svg')
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('image/svg+xml')
+  })
+
+  it('answers 404, not the shell, for a missing asset or a request that is not for a page', async () => {
+    const { request } = await start({ clientDir })
+
+    expect((await request('/assets/index-old999.js', page)).status).toBe(404)
+    expect((await request('/missing.png', { headers: { accept: 'image/avif,image/webp,*/*' } })).status).toBe(404)
+    expect((await request('/shows/169', { method: 'POST', ...page })).status).toBe(404)
+  })
+
+  it('keeps answering unknown API paths with JSON, never the shell', async () => {
+    const { request } = await start({ clientDir })
+
+    const response = await request('/api/nowhere', page)
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toEqual({ message: 'Not found' })
+  })
+
+  it('sends the security headers with pages too', async () => {
+    const { request } = await start({ clientDir })
+
+    const { headers } = await request('/shows/169', page)
+
+    expect(headers.get('content-security-policy')).toContain("frame-ancestors 'none'")
+    expect(headers.get('x-content-type-options')).toBe('nosniff')
+  })
+
+  it('serves no pages when it is given no client folder', async () => {
+    const { request } = await start()
+
+    expect((await request('/', page)).status).toBe(404)
   })
 })
