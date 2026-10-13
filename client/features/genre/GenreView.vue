@@ -1,17 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { ApiError } from '@/shared/api/http'
 import PageLinks from '@/shared/components/PageLinks.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
 import ShowGridSkeleton from '@/shared/components/ShowGridSkeleton.vue'
+import StatusMessage from '@/shared/components/StatusMessage.vue'
 import { useAsyncResource } from '@/shared/composables/useAsyncResource'
 import { formatCount } from '@/shared/utils/format'
 import { fetchGenreShows } from './api'
 
 const props = defineProps<{ genre: string; page: number }>()
 
-const { data: result, status } = useAsyncResource(
+const {
+  data: result,
+  error,
+  status,
+  reload,
+} = useAsyncResource(
   () => ({ genre: props.genre, page: props.page }),
   ({ genre, page }, signal) => fetchGenreShows(genre, page, signal),
 )
+
+const isUnknownGenre = computed(() => error.value instanceof ApiError && error.value.status === 404)
 </script>
 
 <template>
@@ -23,8 +33,24 @@ const { data: result, status } = useAsyncResource(
 
     <ShowGridSkeleton v-if="status === 'loading'" :label="`Loading ${genre} shows`" />
 
+    <StatusMessage v-else-if="isUnknownGenre" :title="`There is no genre called “${genre}”`">
+      <RouterLink :to="{ name: 'dashboard' }" data-test="back-to-genres">Browse all genres</RouterLink>
+    </StatusMessage>
+
+    <StatusMessage
+      v-else-if="error"
+      variant="error"
+      title="Shows could not be loaded"
+      :message="error.message"
+      retryable
+      @retry="reload"
+    />
+
     <template v-else-if="result">
-      <ShowGrid :shows="result.items" />
+      <StatusMessage v-if="result.items.length === 0" title="There are no shows on this page">
+        <RouterLink :to="{ query: {} }" data-test="first-page">Go to the first page</RouterLink>
+      </StatusMessage>
+      <ShowGrid v-else :shows="result.items" />
       <PageLinks :page="result.page" :page-count="result.pageCount" />
     </template>
   </div>

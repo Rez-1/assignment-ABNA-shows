@@ -1,7 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { makePage, makeShow } from '@/testing/fixtures'
-import { fakeApi, renderApp } from '@/testing/renderApp'
+import { fakeApi, jsonResponse, renderApp } from '@/testing/renderApp'
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -45,6 +45,42 @@ describe('genre page', () => {
     expect(signal.aborted).toBe(false)
     await router.push('/')
     expect(signal.aborted).toBe(true)
+  })
+
+  it('says when a genre does not exist and points back to the dashboard', async () => {
+    fakeApi({})
+
+    const { wrapper } = await renderApp('/genres/Westerns')
+
+    expect(wrapper.text()).toContain('There is no genre called “Westerns”')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.get('[data-test="back-to-genres"]').attributes('href')).toBe('/')
+  })
+
+  it('explains a failure and recovers on "Try again"', async () => {
+    let attempts = 0
+    fakeApi({
+      '/api/genres/Drama/shows?page=1': () =>
+        ++attempts === 1 ? jsonResponse({ message: 'Something went wrong' }, 500) : makePage([makeShow({ name: 'Lost' })]),
+    })
+
+    const { wrapper } = await renderApp('/genres/Drama')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Something went wrong')
+
+    await wrapper.get('[role="alert"] button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(names(wrapper)).toEqual(['Lost'])
+  })
+
+  it('says when a page has no shows', async () => {
+    fakeApi({ '/api/genres/Drama/shows?page=9': makePage([], { page: 9, total: 30, pageCount: 2 }) })
+
+    const { wrapper } = await renderApp('/genres/Drama?page=9')
+
+    expect(wrapper.text()).toContain('There are no shows on this page')
+    expect(wrapper.get('[data-test="first-page"]').attributes('href')).toBe('/genres/Drama')
   })
 
   it('pages through the genre, keeping the page in the URL', async () => {
