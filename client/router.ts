@@ -9,6 +9,11 @@ function toPageNumber(value: QueryValue): number {
   return Number.isInteger(page) && page > 0 ? page : 1
 }
 
+/** A show id from the URL, or null when it is not a positive whole number. */
+function toShowId(value: string | string[] | undefined): number | null {
+  return typeof value === 'string' && /^[1-9]\d{0,9}$/.test(value) ? Number(value) : null
+}
+
 function toText(value: QueryValue): string {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -45,7 +50,7 @@ export function createAppRouter(history: RouterHistory) {
         path: '/shows/:id',
         name: 'show',
         component: () => import('@/features/show/ShowDetailView.vue'),
-        props: (route) => ({ id: Number(route.params.id) }),
+        props: (route) => ({ id: toShowId(route.params.id) }),
       },
     ],
   })

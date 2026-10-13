@@ -235,6 +235,66 @@ describe('show detail page', () => {
     })
   })
 
+  it('shows a placeholder while the show loads', async () => {
+    let respond!: (details: unknown) => void
+    fakeApi({ '/api/shows/169': () => new Promise((resolve) => (respond = resolve)) })
+
+    const { wrapper } = await renderApp('/shows/169')
+    expect(wrapper.get('[role="status"]').text()).toBe('Loading show')
+
+    respond(makeShowDetails())
+    await settle()
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.get('h1').text()).toBe('Breaking Bad')
+  })
+
+  it('says when a show does not exist and points back to the dashboard', async () => {
+    fakeApi({})
+
+    const { wrapper } = await renderApp('/shows/999999')
+
+    expect(wrapper.text()).toContain('We could not find that show')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.get('[data-test="back-to-genres"]').attributes('href')).toBe('/')
+  })
+
+  it.each(['/shows/abc', '/shows/1.5', '/shows/0', '/shows/-3'])('treats %s as a show that does not exist, without asking the server', async (path) => {
+    const fetch = fakeApi({})
+
+    const { wrapper } = await renderApp(path)
+
+    expect(wrapper.text()).toContain('We could not find that show')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('explains a failure and recovers on "Try again"', async () => {
+    let attempts = 0
+    showApi(makeShowDetails(), {
+      '/api/shows/169': () =>
+        ++attempts === 1 ? jsonResponse({ message: 'The show database is not responding. Try again shortly.' }, 502) : makeShowDetails(),
+    })
+
+    const { wrapper } = await renderApp('/shows/169')
+    expect(wrapper.get('[role="alert"]').text()).toContain('The show database is not responding. Try again shortly.')
+
+    await wrapper.get('[role="alert"] button').trigger('click')
+    await settle()
+    expect(wrapper.get('h1').text()).toBe('Breaking Bad')
+  })
+
+  it('opens a show you have already seen without asking the server again', async () => {
+    const fetch = showApi(makeShowDetails(), { '/api/genres?limit=20': [] })
+    const { wrapper, router } = await renderApp('/shows/169')
+
+    await router.push('/')
+    await settle()
+    await router.push('/shows/169')
+    await settle()
+
+    expect(wrapper.get('h1').text()).toBe('Breaking Bad')
+    expect(fetch.mock.calls.filter(([url]) => url === '/api/shows/169')).toHaveLength(1)
+  })
+
   it('copes with a show we know little about', async () => {
     showApi(
       makeShowDetails({
