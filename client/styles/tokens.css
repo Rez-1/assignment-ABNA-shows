@@ -1,0 +1,79 @@
+/*
+ * Design tokens, in two layers.
+ *
+ * 1. Raw values: the palette and scales. Nothing outside this file uses them.
+ * 2. Semantic tokens: what a value is *for*. Components only use these, so a
+ *    re-theme means editing this file and nothing else.
+ *
+ * Colour pairs used for text are checked against WCAG AA in tokens.test.ts.
+ */
+:root {
+  /* 1. Raw values */
+  --raw-grey-950: #111214;
+  --raw-grey-900: #18191c;
+  --raw-grey-800: #222428;
+  --raw-grey-700: #32353b;
+  --raw-grey-400: #a3a6ad;
+  --raw-grey-50: #f2f2f3;
+  --raw-yellow-500: #f5b70a;
+  --raw-yellow-400: #ffc933;
+  --raw-yellow-950: #1f1600;
+  --raw-red-300: #ff8f8f;
+
+  --raw-space: 0.25rem;
+
+  /* 2. Semantic tokens */
+  --color-page: var(--raw-grey-950);
+  --color-surface: var(--raw-grey-900);
+  --color-surface-raised: var(--raw-grey-800);
+  --color-border: var(--raw-grey-700);
+  --color-text: var(--raw-grey-50);
+  --color-text-muted: var(--raw-grey-400);
+  /* The single accent: links, focus, active controls and ratings. */
+  --color-accent: var(--raw-yellow-500);
+  --color-accent-hover: var(--raw-yellow-400);
+  --color-on-accent: var(--raw-yellow-950);
+  --color-danger: var(--raw-red-300);
+  --color-scrim: rgb(17 18 20 / 85%);
+
+  --space-1: calc(var(--raw-space) * 1);
+  --space-2: calc(var(--raw-space) * 2);
+  --space-3: calc(var(--raw-space) * 3);
+  --space-4: calc(var(--raw-space) * 4);
+  --space-6: calc(var(--raw-space) * 6);
+  --space-8: calc(var(--raw-space) * 8);
+  --space-12: calc(var(--raw-space) * 12);
+  --space-16: calc(var(--raw-space) * 16);
+
+  --radius-badge: 4px;
+  --radius-card: 8px;
+  --radius-pill: 999px;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  /* Headings scale fluidly between phone and desktop instead of jumping at breakpoints. */
+  --text-lg: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+  --text-xl: clamp(1.75rem, 1.2rem + 2.6vw, 3rem);
+  --weight-regular: 400;
+  --weight-bold: 600;
+  --leading-tight: 1.2;
+  --leading-body: 1.6;
+
+  --page-gutter: clamp(1rem, 4vw, 3rem);
+  --page-max-width: 100rem;
+  --prose-width: 65ch;
+  --card-width: clamp(8.5rem, 38vw, 11rem);
+  --header-height: 4rem;
+
+  --duration-fast: 150ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (max-width: 40rem) {
+  :root {
+    /* The header wraps to two rows on phones: logo, then search. */
+    --header-height: 6.75rem;
+  }
+}
