@@ -75,6 +75,35 @@ describe('show detail page', () => {
     expect(wrapper.get('h1').text()).toBe('Breaking Bad')
   })
 
+  it('lists the cast with the characters they play', async () => {
+    showApi(
+      makeShowDetails({
+        cast: [
+          { id: '1-2', name: 'Bryan Cranston', character: 'Walter White', image: 'https://static.tvmaze.com/cranston.jpg' },
+          { id: '3-4', name: 'Narrator', character: '', image: null },
+        ],
+      }),
+    )
+
+    const { wrapper } = await renderApp('/shows/169')
+    const cast = wrapper.get('section[aria-labelledby="cast-heading"]')
+    const members = cast.findAll('li')
+
+    expect(cast.get('h2').text()).toBe('Cast')
+    expect(members.map((member) => member.get('[data-test="cast-name"]').text())).toEqual(['Bryan Cranston', 'Narrator'])
+    expect(members[0]!.text()).toContain('Walter White')
+    expect(members[0]!.get('img').attributes('src')).toBe('https://static.tvmaze.com/cranston.jpg')
+    expect(members[1]!.find('[data-test="artwork-placeholder"]').exists()).toBe(true)
+  })
+
+  it('leaves out the cast section when no cast is known', async () => {
+    showApi(makeShowDetails({ cast: [] }))
+
+    const { wrapper } = await renderApp('/shows/169')
+
+    expect(wrapper.find('section[aria-labelledby="cast-heading"]').exists()).toBe(false)
+  })
+
   it('copes with a show we know little about', async () => {
     showApi(
       makeShowDetails({
