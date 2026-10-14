@@ -8,7 +8,7 @@ Built with **Vue 3, TypeScript and Vite**, backed by a small **Node/Express** se
 
 | Requirement | Version |
 | --- | --- |
-| Node.js | **24.14.0** used (see `.nvmrc`); 22.18 or newer works |
+| Node.js | **24** (see `.nvmrc`; developed on 24.14.0); 22.18 or newer works |
 | pnpm | **12.11.2**, pinned in `package.json` |
 
 pnpm is used instead of npm. If you do not have it yet, install it once:
@@ -60,13 +60,13 @@ server/             Express API (TypeScript, run directly by Node)
 client/             Vue app
   app/              Header, not-found page
   features/         dashboard · genre · search · show (view, components, API, tests)
-  shared/           Reusable components, composables, API wrapper, formatters
+  shared/           Reusable components, composables, API wrapper and app memory, URL and display helpers
   styles/           Design tokens and base styles
 ```
 
 ### Server
 
-- **A slim copy of the index, in memory.** Each show is reduced to what lists need (id, name, genres, rating, popularity, poster, year). All sorting happens once at start-up; every request afterwards is a lookup and a slice. Loading and indexing 90,480 shows takes about 0.3 s, a search about 6 ms.
+- **A slim copy of the index, in memory.** Each show is reduced to what lists need (id, name, genres, rating, popularity, poster, year). All sorting happens once at start-up; every request afterwards is a lookup and a slice. Loading and indexing 90,480 shows takes about a quarter of a second, a search 4 to 6 ms.
 - **A committed snapshot instead of a start-up crawl.** Crawling the index politely takes about three minutes, which is a poor first impression for someone running the project. The snapshot (2.4 MB gzipped) is committed, so the app starts instantly with complete data. The trade-off is staleness: ratings are as of the last `pnpm seed` (13 October 2026). I chose a manual refresh over a background sync to keep the server small; a scheduled job running the same crawler would be the next step in production.
 - **Ranking.** Highest average rating first; ties are broken by TVMaze's popularity `weight`, because the API exposes no vote count and a tie between a well-known and an obscure show should favour the well-known one; unrated shows come last.
 - **Search runs on the same catalogue**, so it can be combined with a genre filter and ranked consistently: exact title, then titles starting with the query, then words starting with it, then any match, each group by rating. It ignores case and accents. It is not typo-tolerant.
@@ -78,11 +78,11 @@ API: `GET /api/genres`, `/api/genres/:genre/shows`, `/api/shows/search`, `/api/s
 ### Client
 
 - **Vue 3 with `<script setup>` and TypeScript**, as the brief prefers Vue. The project is set up by hand (no `create-vue` template) and uses no UI or utility library: the runtime dependencies are `vue` and `vue-router`.
-- **Organised by feature.** Everything a screen needs sits together, and `shared/` holds what more than one feature uses. Features may depend on `shared/`, not the other way round (the header, which hosts the search box, lives in `app/`).
+- **Organised by feature.** Everything a screen needs sits together, and `shared/` holds what more than one feature uses. Features may depend on `shared/`, not the other way round (the header, which hosts the search box, lives in `app/`). Two features borrow from another: search uses the dashboard's genre rows for its genre filter, and the show page uses the genre API for "More in this genre".
 - **The URL is the state for search and paging.** Query, genre filter and page number live in the address, so results can be shared and the back button behaves. One module, `shared/utils/locations`, reads and writes those parameters; a search address takes no page number, so changing the text or the genre always starts again from the first page.
 - **One way to load data.** Every screen fetches what it needs with one composable, `useAsyncResource`, which tells apart nothing to ask for, loading, missing (a 404), failed and ready, drops the previous answer as soon as the question changes, and aborts requests that have been superseded, so a slow early response can never overwrite a later one. `ResourceState` renders those states, so a screen only supplies its wording and its content.
 - **No state library.** Only two things outlive a screen: the dashboard's genre rows (also the source of the genre filter) and shows already visited, so going back is instant. A small helper, `remember`, keeps them (ask once, share a request that is on its way, forget failures) in a memory the app provides to its components, and screens read them through `useAsyncResource` like anything else. That is all the shared state there is, so a store library would add a dependency without adding anything the app uses.
-- **Reusable pieces:** `HorizontalScroller` (genre rows, seasons, episodes, cast), `ShowRow`, `ShowCard`, `ShowGrid`, `ArtworkImage`, `PageLinks`, `ResourceState`, `StatusMessage` and the skeleton placeholders.
+- **Reusable pieces:** `HorizontalScroller` (genre rows, seasons, episodes, cast), `ShowRow`, `ShowCard`, `ShowGrid`, `ArtworkImage`, `PageLinks`, `ResourceState`, `StatusMessage`, `BrowseGenresLink` and the skeleton placeholders.
 
 ### Design
 
@@ -95,7 +95,7 @@ API: `GET /api/genres`, `/api/genres/:genre/shows`, `/api/shows/search`, `/api/s
 
 The target is WCAG 2.2 AA.
 
-- **Structure:** landmarks, exactly one main heading on every screen (including error and not-found states), labelled sections and lists, and explicit list roles so Safari keeps list semantics on unstyled lists.
+- **Structure:** landmarks, exactly one main heading on every screen once it has loaded (including error and not-found states; the show page has none while the show is still loading, because its name is not known yet), labelled sections and lists, and explicit list roles so Safari keeps list semantics on unstyled lists.
 - **Keyboard:** a skip link, visible focus on every control, and every scrolling row reachable by keyboard: rows of links through their links, rows of plain content (cast, episodes) through a tab stop of their own.
 - **Navigation without page loads:** after moving to another page, focus moves into the new content and a live region announces the page's name. Typing a search or paging leaves focus where it is.
 - **Announcements:** loading and error states are announced, and the search page announces the number of results as you type.
@@ -125,13 +125,15 @@ Tests sit at a small number of agreed boundaries and describe behaviour rather t
 
 | Boundary | How it is tested |
 | --- | --- |
-| HTTP API | Real HTTP requests against the Express app, with a fake TVMaze client |
+| HTTP API | Real HTTP requests against the Express app, with a fake TVMaze client and, for page serving, a temporary client folder |
 | Catalogue | Ranking, genre rows, paging and search through its public interface |
 | TVMaze client | Only `fetch` is faked; mapping and URL/HTML safety are tested through it |
 | Snapshot file | Written and read back from a temporary directory |
 | Screens | The whole Vue app is mounted with the real router; only `fetch` is faked |
 | Interactive components | `HorizontalScroller`, and search and paging through the screens |
 | `useAsyncResource` | Idle, loading, missing, errors, reload, no stale data and "the newest request wins" |
+| `remember` | Asking once per key, sharing a request on its way, forgetting failures |
+| URL locations | Reading and writing the search and paging parameters, including malformed values |
 | Design tokens | WCAG AA contrast of the colour pairs, including text over artwork |
 | Accessibility | axe on every screen, plus focus, announcements and text alternatives |
 
