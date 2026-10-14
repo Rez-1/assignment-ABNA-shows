@@ -45,10 +45,13 @@ onMounted(() => {
 onUpdated(refresh)
 onBeforeUnmount(() => resizeObserver?.disconnect())
 
-/** Scrolls most of a page, leaving the last visible card on screen as a point of reference. */
+/** How far one press of a button scrolls, as a share of the visible width. */
+const PAGE_STEP = 0.85
+
+/** Scrolls most of a page, leaving part of the last visible card on screen as a point of reference. */
 function scrollByPage(direction: 1 | -1) {
   const element = track.value
-  if (element) element.scrollBy({ left: direction * element.clientWidth * 0.85 })
+  if (element) element.scrollBy({ left: direction * element.clientWidth * PAGE_STEP })
 }
 </script>
 
