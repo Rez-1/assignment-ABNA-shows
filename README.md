@@ -9,20 +9,25 @@ Built with **Vue 3, TypeScript and Vite**, backed by a small **Node/Express** se
 | Requirement | Version |
 | --- | --- |
 | Node.js | **24** (see `.nvmrc`; developed on 24.14.0); 22.18 or newer works |
-| pnpm | **12.11.2**, pinned in `package.json` |
+| npm | **11.9.0** (comes with Node 24) |
+| pnpm | **12.11.2**, pinned in `package.json`; optional, see below |
 
-pnpm is used instead of npm. If you do not have it yet, install it once:
-
-```bash
-npm install --global pnpm@12
-```
-
-Then:
+The project is developed with pnpm, whose lockfile is committed, so `pnpm install` gives you exactly the tested dependency versions:
 
 ```bash
+npm install --global pnpm@12   # once, if you do not have pnpm
 pnpm install
-pnpm dev                 # http://localhost:3000
+pnpm dev                       # http://localhost:3000
 ```
+
+Plain npm works too. It resolves the dependencies afresh within the ranges in `package.json` rather than from the lockfile; I checked that a clean copy installs, passes the tests, builds and runs this way:
+
+```bash
+npm install
+npm run dev                    # http://localhost:3000
+```
+
+The commands below are written for pnpm; with npm, use `npm run <name>` (and `npm test`).
 
 | Command | What it does |
 | --- | --- |
@@ -35,6 +40,15 @@ pnpm dev                 # http://localhost:3000
 | `pnpm seed` | Re-crawls TVMaze and rewrites the bundled catalogue (takes about 3 minutes) |
 
 `PORT` and `HOST` change where the server listens. It binds to `127.0.0.1` by default.
+
+## Why these choices
+
+- **Vue 3.** The brief says ABN AMRO uses Vue, and Vue 3's Composition API with `<script setup>` suits this app: each screen's data loading lives in one composable (`useAsyncResource`) shared by every screen, rather than repeated in lifecycle hooks. Single-file components keep each component's template, logic and scoped styles together.
+- **TypeScript throughout.** The server and the client share one set of types (`shared/types.ts`), so a change to the API's shape is a compile error on both sides rather than a bug at runtime.
+- **Vite.** Fast development with hot reload and an optimised production build, with almost no configuration (`vite.config.ts` also configures the tests). Vitest uses the same configuration, so tests compile code exactly as the app does.
+- **vue-router, and nothing else at runtime.** The URL holds the state worth sharing (search, genre filter, page), so the router does most of the state management. A store library such as Pinia was in an earlier version and taken out: only two things outlive a screen, and a small helper handles both (see Client below). No UI or CSS library either: the brief asks to see my own work, and the components and design tokens are small enough to own.
+- **Node and Express on the server.** TVMaze cannot sort or filter by genre, so something has to hold the whole catalogue (next section). Express is the most familiar choice for a reviewer and needs only a few routes; Node 24 runs the server's TypeScript directly, so there is no build step on that side.
+- **Vitest and Vue Test Utils** for tests, because they share Vite's configuration and run the real components in a simulated browser.
 
 ## The problem that shaped the design
 
@@ -69,6 +83,7 @@ client/             Vue app
 - **A slim copy of the index, in memory.** Each show is reduced to what lists need (id, name, genres, rating, popularity, poster, year). All sorting happens once at start-up; every request afterwards is a lookup and a slice. Loading and indexing 90,480 shows takes about a quarter of a second, a search 4 to 6 ms.
 - **A committed snapshot instead of a start-up crawl.** Crawling the index politely takes about three minutes, which is a poor first impression for someone running the project. The snapshot (2.4 MB gzipped) is committed, so the app starts instantly with complete data. The trade-off is staleness: ratings are as of the last `pnpm seed` (13 October 2026). I chose a manual refresh over a background sync to keep the server small; a scheduled job running the same crawler would be the next step in production.
 - **Ranking.** Highest average rating first; ties are broken by TVMaze's popularity `weight`, because the API exposes no vote count and a tie between a well-known and an obscure show should favour the well-known one; unrated shows come last.
+- **One genre is kept off the dashboard.** TVMaze lists an "Adult" genre (262 shows). It is left out of the dashboard's rows, quick links and the search filter, because of what its posters show. Its shows can still be found by name, and its genre page still works for anyone who asks for it.
 - **Search runs on the same catalogue**, so it can be combined with a genre filter and ranked consistently: exact title, then titles starting with the query, then words starting with it, then any match, each group by rating. It ignores case and accents. It is not typo-tolerant.
 - **Details are proxied live.** Show details, cast, seasons and episodes come from TVMaze on demand (one call per show), cached for an hour.
 - **One process.** In development Express mounts Vite as middleware; after a build it serves `dist/`. One command, one port, no proxy configuration. Node runs the TypeScript directly, so the server has no build step.
@@ -137,9 +152,16 @@ Tests sit at a small number of agreed boundaries and describe behaviour rather t
 | Design tokens | WCAG AA contrast of the colour pairs, including text over artwork |
 | Accessibility | axe on every screen, plus focus, announcements and text alternatives |
 
-The client was written test-first, one behaviour at a time. The server's tests were written after its code; to make up for that, each behaviour on both sides was then broken deliberately once to confirm that a test fails (115 breakages, all caught after closing four gaps this found). Line coverage is 99%.
+The client was written test-first, one behaviour at a time. The server's tests were written after its code; to make up for that, each behaviour on both sides was then broken deliberately once to confirm that a test fails. That check found four gaps, which now have tests. After later refactoring it was run again against the current code: 116 deliberate breakages, all caught. Line coverage is 99%.
 
 CI (`.github/workflows/ci.yml`) audits dependencies, lints, type-checks, tests and builds.
+
+## Messages you may see in the browser console
+
+Using the app normally leaves the console empty. Two kinds of message can appear, both logged by the browser itself for an HTTP response, not by the app:
+
+- **`Failed to load resource: … 404 (Not Found)`** when you open the address of a show that does not exist (for example `/shows/999999999`) or of a genre that does not exist. The API answers 404 because the show is genuinely not there; the app handles that answer and shows a "could not find" page. Every link inside the app points at a show that exists, so you only get here by typing or pasting such an address. I kept the 404 rather than answering 200 with an empty body, because that would hide a missing resource behind a success code.
+- **`429 (Too Many Requests)`** if one visitor opens show pages or seasons more than 60 times a minute. That limit protects TVMaze from being flooded through this server; the page then shows an error with a "Try again" button.
 
 ## Trade-offs and what I would do next
 
