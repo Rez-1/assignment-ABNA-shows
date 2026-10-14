@@ -26,6 +26,18 @@ describe('genreRows', () => {
     ])
   })
 
+  it('leaves the adult genre off the dashboard, while its shows stay reachable', () => {
+    const withAdult = createCatalogue([
+      makeShow({ name: 'Explicit', genres: ['Adult'] }),
+      makeShow({ name: 'Mixed', genres: ['Adult', 'Drama'] }),
+    ])
+
+    expect(withAdult.genreRows(20).map((row) => row.genre)).toEqual(['Drama'])
+    expect(names(withAdult.genreRows(20)[0]!.shows)).toEqual(['Mixed'])
+    expect(withAdult.showsByGenre('Adult', firstPage)?.total).toBe(2)
+    expect(names(withAdult.search({ query: 'explicit', ...firstPage }).items)).toEqual(['Explicit'])
+  })
+
   it('sorts each row by rating with unrated shows last, and honours the limit', () => {
     const [drama] = catalogue.genreRows(20)
     expect(names(drama!.shows)).toEqual(['Holocaust', 'Lost', 'Lost Girl', 'Unrated Drama'])

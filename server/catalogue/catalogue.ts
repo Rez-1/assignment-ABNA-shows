@@ -52,6 +52,12 @@ function groupByGenre(shows: readonly ShowSummary[]): Map<string, Genre> {
   return genres
 }
 
+/**
+ * Genres kept off the dashboard because of their content. Their shows can still
+ * be found through search, and their genre page still works for anyone who asks.
+ */
+const HIDDEN_FROM_DASHBOARD = new Set(['adult'])
+
 const bySizeThenName = (a: Genre, b: Genre) => b.shows.length - a.shows.length || a.name.localeCompare(b.name)
 
 /**
@@ -63,7 +69,10 @@ export function createCatalogue(shows: readonly ShowSummary[]): Catalogue {
   const searchNames = ranked.map((show) => normalise(show.name))
   // `ranked` is already sorted, so each genre's list is too.
   const genres = groupByGenre(ranked)
-  const genresBySize = [...genres.values()].sort(bySizeThenName)
+  const dashboardGenres = [...genres.entries()]
+    .filter(([key]) => !HIDDEN_FROM_DASHBOARD.has(key))
+    .map(([, genre]) => genre)
+    .sort(bySizeThenName)
 
   /** The shows whose name matches, best match first and, within one quality of match, best rated first. */
   function matching(needle: string, wanted: (show: ShowSummary) => boolean): ShowSummary[] {
@@ -80,7 +89,7 @@ export function createCatalogue(shows: readonly ShowSummary[]): Catalogue {
     size: ranked.length,
 
     genreRows(limit) {
-      return genresBySize.map(({ name, shows }) => ({ genre: name, total: shows.length, shows: shows.slice(0, limit) }))
+      return dashboardGenres.map(({ name, shows }) => ({ genre: name, total: shows.length, shows: shows.slice(0, limit) }))
     },
 
     showsByGenre(genre, paging) {
