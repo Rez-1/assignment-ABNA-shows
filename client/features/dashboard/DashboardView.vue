@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import ResourceState from '@/shared/components/ResourceState.vue'
+import ShowRow from '@/shared/components/ShowRow.vue'
 import SkeletonCard from '@/shared/components/SkeletonCard.vue'
 import { usePageName } from '@/shared/composables/usePageName'
+import { formatCount } from '@/shared/utils/format'
+import { genreAnchor } from '@/shared/utils/locations'
 import GenreQuickLinks from './GenreQuickLinks.vue'
-import GenreRow from './GenreRow.vue'
 import { useGenreRows } from './genreRows'
 
 const genres = useGenreRows()
@@ -24,7 +26,16 @@ usePageName(() => null)
 
       <template #default="{ data: rows }">
         <GenreQuickLinks :genres="genres.genreNames.value" />
-        <GenreRow v-for="row in rows" :key="row.genre" :row="row" />
+        <ShowRow
+          v-for="row in rows"
+          :id="genreAnchor(row.genre)"
+          :key="row.genre"
+          :title="row.genre"
+          :note="formatCount(row.total, 'show')"
+          :genre="row.genre"
+          :shows="row.shows"
+          data-test="genre-row"
+        />
       </template>
     </ResourceState>
   </div>

@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGenreRows } from '@/features/dashboard/genreRows'
-import GenreSelect from '@/shared/components/GenreSelect.vue'
 import PageLinks from '@/shared/components/PageLinks.vue'
 import ResourceState from '@/shared/components/ResourceState.vue'
 import ShowGrid from '@/shared/components/ShowGrid.vue'
@@ -13,6 +12,7 @@ import { usePageName } from '@/shared/composables/usePageName'
 import { formatCount } from '@/shared/utils/format'
 import { searchLocation } from '@/shared/utils/locations'
 import { searchShows } from './api'
+import GenreSelect from './GenreSelect.vue'
 
 const props = defineProps<{ query: string; genre?: string; page: number }>()
 
